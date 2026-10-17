@@ -1,6 +1,6 @@
 # 传感器工程实验室
 
-A mobile-friendly, browser-only learning workbench for sensor measurement engineering. All examples use generic ideal models and synthetic data.
+A mobile-friendly, browser-only learning workbench for sensor measurement engineering. The six interactive lessons use generic ideal models and synthetic data. A separate engineering-case collection summarizes source-checked vendor bench reports, without claiming an in-house hardware reproduction.
 
 ## Lessons
 
@@ -25,6 +25,7 @@ Open the server URL. Deploy the root directory as a static site. Routes use URL 
 
     node models.test.cjs
     node render.test.cjs
+    node engineering-cases.test.cjs
 
 The numerical tests cover ADC settling and repeated-acquisition assumptions, sample statistics, deterministic noise, calibration/validation separation, loading, gain-bandwidth response, ideal ratio cancellation and parameter limits.
 
@@ -37,3 +38,12 @@ The measurement guidance is limited to verified safely isolated low-voltage DC s
 ## Sources
 
 Official references and their verification dates are listed in the site’s reference view, including ST AN2834 Rev 10, TI SPRACT6A, TI SBOA356, ADI AN-1464, ADI AN-1142, and Tektronix probe guidance. Equations and numerical examples are independently derived from the stated ideal models.
+
+## Engineering cases (verified 2026-10-17)
+
+- `#cases`: evidence-aware case index
+- `#case/ti-tipd120`: TI three-wire RTD reference design, excitation mismatch, calibration and precision-resistor tests
+- `#case/adi-cn0359`: ADI conductivity front end, AC excitation, autoranging and temperature compensation
+- `#case/st-an4073`: ST STM32F407 laboratory comparison of ART settings, code dispersion and averaging cost
+
+Each case carries original/revision dates, official source links, hardware/software conditions, evidence type, explicit non-reproduction status, separately labeled calculations and a proposed bench acceptance checklist. New cases remain pending reading and do not migrate or mark the six original lesson states. These are vendor laboratory/reference-design cases, not verified production deployments or a ranking of manufacturers. Vendor software and hardware procedures were not executed.
