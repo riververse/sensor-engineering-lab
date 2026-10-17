@@ -47,3 +47,14 @@ Official references and their verification dates are listed in the site’s refe
 - `#case/st-an4073`: ST STM32F407 laboratory comparison of ART settings, code dispersion and averaging cost
 
 Each case carries original/revision dates, official source links, hardware/software conditions, evidence type, explicit non-reproduction status, separately labeled calculations and a proposed bench acceptance checklist. New cases remain pending reading and do not migrate or mark the six original lesson states. These are vendor laboratory/reference-design cases, not verified production deployments or a ranking of manufacturers. Vendor software and hardware procedures were not executed.
+
+## Advanced MCU acquisition timing (verified 2026-10-17)
+
+`#timing` adds an advanced, source-checked editorial lesson and interactive timing budget:
+- STM32F407 TIM1 → TIM2/3/4 reset synchronization, supported CC2/TRGO/CC4 → ADC1/2/3 routes and nonconflicting DMA streams
+- Explicit differences between scan, independent ADCs, simultaneous mode and interleaving
+- PWM quiet-window triggering on F28003x, DMA double-buffer ownership and MUX/SAR acquisition settling
+- Synthetic timing windows, frame deadline and per-ADC throughput budgets; no hardware simulation or board-test claim
+- Current RM0090 Rev22, DS8626 Rev12 and ES0182 Rev19 references, plus official vendor applications and source examples
+
+No vendor firmware was executed, no hardware was connected, and no learning state was changed automatically. The new page uses no persistent storage. Run `node mcu-timing.test.cjs` in addition to the existing tests.

@@ -10,7 +10,7 @@ const index=read('index.html'),app=read('app.js'),css=read('style.css');
 const dataCtx={window:{}};vm.createContext(dataCtx);vm.runInContext(read('engineering-cases.js'),dataCtx);
 const cases=JSON.parse(JSON.stringify(dataCtx.window.SensorCases));
 const lessons=['driver','adc','reference','error','calibration','debug'];
-const routes=['home','path','sources','cases',...lessons.map(id=>'lesson/'+id),...cases.map(c=>'case/'+c.id),'case/missing','unrecognized'];
+const routes=['home','path','sources','cases','timing',...lessons.map(id=>'lesson/'+id),...cases.map(c=>'case/'+c.id),'case/missing','unrecognized'];
 equal(cases.map(c=>c.id),['ti-tipd120','adi-cn0359','st-an4073'],'stable case deep links');
 for(const c of cases){
  equal(c.status,'待学习',c.id+' pending');equal(c.reproduction,'未本站实物复现',c.id+' reproduction boundary');equal(c.verified,'2026-10-17',c.id+' verification date');
@@ -28,7 +28,7 @@ for(const c of cases){
 }
 ok(index.indexOf('engineering-cases.js')>index.indexOf('content.js')&&index.indexOf('engineering-cases.js')<index.indexOf('app.js'),'data loads before renderer');
 ok(index.includes('data-nav="cases"'),'top navigation includes cases');
-ok(index.includes('20261017.5'),'cache bust');
+ok(index.includes('20261017.6'),'cache bust');
 ok(css.includes('.paused .hero-sweep,.paused .hero-sample{animation-play-state:paused}'),'animation pause rule preserved');
 ok(app.includes("const KEY='sensor-engineering-lab:v1'"),'local progress storage namespace preserved');
 ok(app.includes("Math.abs(n)<0.5*10**(-d)?0:Number(n)"),'zero display normalization preserved');
@@ -36,7 +36,7 @@ const saved={params:{adc:{resistance:47,acquisition:2,bits:12,previous:.2,sample
 function render(route){
  const elements=new Map(),events={},winEvents={},writes=[];
  function element(key){if(!elements.has(key))elements.set(key,{innerHTML:'',textContent:'',value:'',dataset:{},attrs:{},classList:{add(){},remove(){},toggle(){}},addEventListener(n,fn){events[key+':'+n]=fn;},setAttribute(k,v){this.attrs[k]=v;},removeAttribute(k){delete this.attrs[k];},focus(){},click(){}});return elements.get(key);}
- const nav=['home','path','cases','sources'].map(id=>{const el=element('nav-'+id);el.dataset.nav=id;return el;});
+ const nav=['home','path','cases','timing','sources'].map(id=>{const el=element('nav-'+id);el.dataset.nav=id;return el;});
  const query=key=>{
    if(['#motion-toggle','#hero-instrument','#complete'].includes(key)&&!element('#main').innerHTML.includes('id="'+key.slice(1)+'"'))return null;
    return element(key);
@@ -44,7 +44,7 @@ function render(route){
  const ctx={console,Math,Number,JSON,Object,Array,String,Infinity,Blob,URL,setTimeout(){},clearTimeout(){},history:{scrollRestoration:'auto'},localStorage:{getItem(){return JSON.stringify(saved);},setItem(k,v){writes.push([k,JSON.parse(v)]);}},location:{hash:'#'+route},document:{querySelector:query,querySelectorAll(k){return k==='[data-nav]'?nav:[];},createElement:element,addEventListener(n,fn){events[n]=fn;}},window:{scrollY:0,addEventListener(n,fn){winEvents[n]=fn;},scrollTo(){}}};
  ctx.globalThis=ctx;vm.createContext(ctx);
  vm.runInContext(read('models.js'),ctx);ctx.window.SensorModels=ctx.SensorModels;
- for(const filename of ['content.js','engineering-cases.js','app.js'])vm.runInContext(read(filename),ctx);
+ for(const filename of ['content.js','engineering-cases.js','mcu-timing.js','app.js'])vm.runInContext(read(filename),ctx);
  return {ctx,elements,events,winEvents,writes,nav,html:element('#main').innerHTML};
 }
 for(const route of routes){
@@ -53,7 +53,7 @@ for(const route of routes){
  ok(!/undefined|NaN/.test(html),route+' finite rendering');
  equal((html.match(/<h1\b/g)||[]).length,1,route+' single page heading');
  equal(r.writes.length,0,route+' reading does not write progress');
- const expectedNav=route==='cases'||route.startsWith('case/')?'cases':route==='path'?'path':route==='sources'?'sources':'home';
+ const expectedNav=route==='timing'?'timing':route==='cases'||route.startsWith('case/')?'cases':route==='path'?'path':route==='sources'?'sources':'home';
  equal(r.nav.filter(n=>n.attrs['aria-current']==='page').map(n=>n.dataset.nav),[expectedNav],route+' accessible nav state');
  for(const href of Array.from(html.matchAll(/href="(#[^"]+)"/g),m=>m[1].slice(1)))ok(routes.includes(href),route+' resolves '+href);
  r.winEvents.pagehide();
