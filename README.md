@@ -1,6 +1,6 @@
 # 传感器工程实验室
 
-A mobile-friendly, browser-only learning workbench for sensor measurement engineering. The six interactive lessons use generic ideal models and synthetic data. A separate engineering-case collection summarizes source-checked vendor bench reports, without claiming an in-house hardware reproduction.
+A mobile-friendly, browser-only learning workbench for sensor measurement engineering. The six interactive lessons use generic ideal models and synthetic data. A separate engineering-case collection summarizes source-checked vendor bench reports and a manual/driver-based failure-recovery design, without claiming an in-house hardware reproduction.
 
 ## Lessons
 
@@ -39,14 +39,15 @@ The measurement guidance is limited to verified safely isolated low-voltage DC s
 
 Official references and their verification dates are listed in the site’s reference view, including ST AN2834 Rev 10, TI SPRACT6A, TI SBOA356, ADI AN-1464, ADI AN-1142, and Tektronix probe guidance. Equations and numerical examples are independently derived from the stated ideal models.
 
-## Engineering cases (verified 2026-10-17)
+## Engineering cases (original three verified 2026-10-17; fourth verified 2026-10-18)
 
 - `#cases`: evidence-aware case index
 - `#case/ti-tipd120`: TI three-wire RTD reference design, excitation mismatch, calibration and precision-resistor tests
 - `#case/adi-cn0359`: ADI conductivity front end, AC excitation, autoranging and temperature compensation
 - `#case/st-an4073`: ST STM32F407 laboratory comparison of ART settings, code dispersion and averaging cost
+- `#case/st-adc-overrun`: STM32F407 ADC scan overrun, per-result DMA deadlines, conservative recovery generations, partial-frame rejection and completed-buffer ownership; a reasoned design from RM0090 Rev 22, AN4031 Rev 3 and pinned HAL source, not a bench report
 
-Each case carries original/revision dates, official source links, hardware/software conditions, evidence type, explicit non-reproduction status, separately labeled calculations and a proposed bench acceptance checklist. New cases remain pending reading and do not migrate or mark the six original lesson states. These are vendor laboratory/reference-design cases, not verified production deployments or a ranking of manufacturers. Vendor software and hardware procedures were not executed.
+Each case carries original/revision dates, official source links, hardware/software conditions, evidence type, explicit non-reproduction status, separately labeled calculations and a proposed bench acceptance checklist. New cases remain pending reading and do not migrate or mark the six original lesson states. The first three are vendor laboratory/reference-design cases; the fourth is a document-based fault-recovery design with no measured performance claim. None is a verified production deployment or a ranking of manufacturers. Vendor software and hardware procedures were not executed.
 
 ## Advanced MCU acquisition timing (verified 2026-10-17)
 
@@ -58,3 +59,5 @@ Each case carries original/revision dates, official source links, hardware/softw
 - Current RM0090 Rev22, DS8626 Rev12 and ES0182 Rev19 references, plus official vendor applications and source examples
 
 No vendor firmware was executed, no hardware was connected, and no learning state was changed automatically. The new page uses no persistent storage. Run `node mcu-timing.test.cjs` in addition to the existing tests.
+
+The fourth case distinguishes ADC OVR, DMA TE/DME/FE and application-level buffer overwrite. It includes exact route/clock assumptions, scan/half-buffer arithmetic, a bounded recovery plan, a paper exercise and license limits. Source content is authored directly in `engineering-cases.js`; this repository has no build generator. No MCU or vendor firmware is executed by the site or its tests.

@@ -11,24 +11,24 @@ const dataCtx={window:{}};vm.createContext(dataCtx);vm.runInContext(read('engine
 const cases=JSON.parse(JSON.stringify(dataCtx.window.SensorCases));
 const lessons=['driver','adc','reference','error','calibration','debug'];
 const routes=['home','path','sources','cases','timing',...lessons.map(id=>'lesson/'+id),...cases.map(c=>'case/'+c.id),'case/missing','unrecognized'];
-equal(cases.map(c=>c.id),['ti-tipd120','adi-cn0359','st-an4073'],'stable case deep links');
+equal(cases.map(c=>c.id),['ti-tipd120','adi-cn0359','st-an4073','st-adc-overrun'],'stable case deep links');
 for(const c of cases){
- equal(c.status,'待学习',c.id+' pending');equal(c.reproduction,'未本站实物复现',c.id+' reproduction boundary');equal(c.verified,'2026-10-17',c.id+' verification date');
+ equal(c.status,'待学习',c.id+' pending');equal(c.reproduction,'未本站实物复现',c.id+' reproduction boundary');equal(c.verified,c.id==='st-adc-overrun'?'2026-10-18':'2026-10-17',c.id+' verification date');
  ok(/^\d{4}-\d{2}(-\d{2})?$/.test(c.published),c.id+' original publication date');
  ok(c.revision.length>15&&c.conditions.includes('版本'),c.id+' version/conditions');
  ok(c.evidence.includes('厂商')&&c.sources.length>0,c.id+' evidence category');
- ok(c.blocks.length===5,c.id+' full case structure');
+ ok(c.blocks.length===(c.id==='st-adc-overrun'?6:5),c.id+' full case structure');
  ok(c.blocks.some(b=>b.bullets?.length===4),c.id+' actionable unexecuted checklist');
  ok(c.blocks.some(b=>b.formula),c.id+' explicit calculation');
  ok(c.lessons.every(id=>lessons.includes(id)),c.id+' valid lesson references');
  equal(new Set(c.sources.map(s=>s.id)).size,c.sources.length,c.id+' unique source IDs');
- for(const source of c.sources){const url=new URL(source.url);ok(url.protocol==='https:'&&['www.ti.com','www.st.com','www.analog.com'].includes(url.hostname),c.id+' official HTTPS source');ok(source.date.length>10,c.id+' source date available or explicitly unavailable');}
+ for(const source of c.sources){const url=new URL(source.url);ok(url.protocol==='https:'&&(['www.ti.com','www.st.com','www.analog.com'].includes(url.hostname)||(url.hostname==='github.com'&&url.pathname.startsWith('/STMicroelectronics/stm32f4xx-hal-driver/blob/1f6451c3e07728b4c830744de380e56bf5bc0026/'))),c.id+' official HTTPS source');ok(source.date.length>10,c.id+' source date available or explicitly unavailable');}
  for(const b of c.blocks)for(const id of b.sourceIds||[])ok(c.sources.some(s=>s.id===id),c.id+' resolved claim citation');
- ok(c.blocks[3].paragraphs.join('').includes('尚未执行'),c.id+' bench plan is unexecuted');
+ ok(c.blocks.find(b=>b.title==='待执行的台架验收清单').paragraphs.join('').includes('尚未执行'),c.id+' bench plan is unexecuted');
 }
 ok(index.indexOf('engineering-cases.js')>index.indexOf('content.js')&&index.indexOf('engineering-cases.js')<index.indexOf('app.js'),'data loads before renderer');
 ok(index.includes('data-nav="cases"'),'top navigation includes cases');
-ok(index.includes('20261017.6'),'cache bust');
+ok(index.includes('20261018.1'),'cache bust');
 ok(css.includes('.paused .hero-sweep,.paused .hero-sample{animation-play-state:paused}'),'animation pause rule preserved');
 ok(app.includes("const KEY='sensor-engineering-lab:v1'"),'local progress storage namespace preserved');
 ok(app.includes("Math.abs(n)<0.5*10**(-d)?0:Number(n)"),'zero display normalization preserved');
@@ -76,4 +76,15 @@ ok(Math.abs(.00415/.39083-.0106)<.00003,'RTD local-sensitivity conversion');
 ok(Math.abs(.001**2*100*1000-.1)<1e-12,'RTD electrical power in mW');
 equal(2*.2,.4,'illustrative temperature error in percent');
 ok(Math.abs(4/2.4-1.667)<.001,'4-acquisition lower bound in microseconds');
+const recovery=cases.find(c=>c.id==='st-adc-overrun'),text=JSON.stringify(recovery);
+for(const phrase of ['RM0090 Rev 22','EXTSEL = 0011','EOCS = 0','DMA2 Stream0 / Channel0','TE / DME / FE','generation','EN = 0','3 μs','rc_w0','SMP[2:0] = 010','SWSTART','旧消费者退出','BSD-3-Clause','第三方实测','未编译、运行或烧录'])ok(text.includes(phrase),'recovery boundary '+phrase);
+for(const source of recovery.sources)if(source.url.includes('github.com'))ok(!source.url.includes('/master/')&&!source.url.includes('/main/'),'HAL links immutable');
+ok(Math.abs(28/21-1.333)<.001,'scan acquisition budget');
+ok(Math.abs(40/21-1.905)<.001,'per-result DMA service budget');
+ok(Math.abs(3*40/21-5.714)<.001,'three-rank conversion budget');
+equal(3*2*10000,60000,'60 kB/s is average data rate');
+equal(384/2/3,64,'half buffer holds whole frames');
+equal(64*100/1000,6.4,'half-buffer completion interval in milliseconds');
+equal([Math.floor((384-185)/3),(384-185)%3],[66,1],'199 moved words are 66 complete frames plus a residual');
+ok(render('sources').html.includes('链接核验 2026-10-18'),'new case source date rendered without retagging old sources');
 console.log(`${checks} engineering-case content, deep-link, rendering and progress checks passed.`);
