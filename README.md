@@ -61,3 +61,17 @@ Each case carries original/revision dates, official source links, hardware/softw
 No vendor firmware was executed, no hardware was connected, and no learning state was changed automatically. The new page uses no persistent storage. Run `node mcu-timing.test.cjs` in addition to the existing tests.
 
 The fourth case distinguishes ADC OVR, DMA TE/DME/FE and application-level buffer overwrite. It includes exact route/clock assumptions, scan/half-buffer arithmetic, a bounded recovery plan, a paper exercise and license limits. Source content is authored directly in `engineering-cases.js`; this repository has no build generator. No MCU or vendor firmware is executed by the site or its tests.
+
+## Delta-sigma multiplexed acquisition case (verified 2026-10-19)
+
+- `#case/ti-ads1256-mux`: ADS1256 digital-filter restart and settled channel-cycling throughput, distinct from the existing SAR acquisition and timer material.
+- Sources: TI SBAS288K electrical body (September 2013; the November 2025 packaging addendum is separate) and SBAA535A (March 2024).
+- The independent example separates 30 kSPS steady output, 4,374 total settled channel results/s under the specified vendor timing, analog guard, previous-channel result identity, and a four-channel frame deadline.
+- A hypothetical RC/source-step budget raises the four-channel frame period from approximately 914.495 μs to 1045.019 μs before final processing, so the stated 1 ms target is not met. This is arithmetic from stated assumptions, not an ADS1256 circuit simulation or measured board result.
+- Startup, missed-service invalidation, unperformed bench acceptance, two migration exercises and copyright/license boundaries are included. No MCU timer, DMA route, firmware executable or hardware action is introduced.
+
+Run the focused original synthetic calculation/content regressions as well as all existing suites:
+
+    node ads1256-scan.test.cjs
+
+The focused suite freezes the previous four case objects and checks new timing, channel identity, error-budget and migration examples. Existing six lessons, timing module, styles and manual progress behavior are preserved. The new case remains pending reading; no completion state is inferred.
