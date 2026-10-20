@@ -22,7 +22,7 @@ for(const [name,digest] of Object.entries({
  'models.js':'61aeeaa1ceface1d6eac26594e34e791503dec2b3d126e7514f98df20c0546e5',
  'mcu-timing.js':'75b49417d443c63eb78804e2689b29c2b3329fed617896bb89f547c91e431416',
  'style.css':'f1564c78b9adffac3c782a2efcb422ea64ab06d1886b90b66b028a1b75cbfb4d'
-}))equal(hash(read(name)),digest,'original lessons/models/timing/styles frozen: '+name);
+}))equal(hash(name==='style.css'?read(name).split('\n/* Reading introductions:')[0]:read(name)),digest,'original lessons/models/timing/styles frozen: '+name);
 equal(c.verified,'2026-10-19','new verification date only');equal(c.status,'待学习','new case pending');equal(c.reproduction,'未本站实物复现','no bench claim');
 equal(c.blocks.length,7,'problem, choice, budgets, identity, tests and migration');
 for(const phrase of ['SBAS288K','2013-09','2025-11-11','SBAA535A','2024-03','CLKIN = 7.68 MHz','SCLK = CLKIN / 4','3 字节 MUX WREG','单 ADC','不是多 ADC 同时采样或交错模式','completed_channel','converting_channel','RDATA(old)','SYNC 后、WAKEUP 前','尚未执行','不纳入这个固定配置稳态例子','不是精确采样孔径','零错标签','缺测可见','不是 ADS1256 内部 MUX / 采样电容的物理仿真','未复制或执行厂商固件','开源代码许可证'])ok(text.includes(phrase),'explicit scope/evidence: '+phrase);

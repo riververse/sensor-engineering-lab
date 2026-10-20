@@ -87,3 +87,9 @@ The focused suite freezes the previous four case objects and checks new timing, 
 Run all prior suites and:
 
     node dma2-gpio.test.cjs
+
+## Plain-language case introductions (2026-10-20)
+
+All six case cards begin with the problem and the rough method. Detail pages additionally state the evidence boundary and a single takeaway before hardware conditions and register-level discussion. `SensorCaseOverviews` in `engineering-cases.js` is a separate presentation layer: original case evidence, dates, sources, formulas and learning status are retained unchanged. When adding a case, provide all four overview fields and keep untested proposals distinct from measured solutions.
+
+Run `node case-overviews.test.cjs` alongside all existing suites. No build generator or learning-state migration is introduced.

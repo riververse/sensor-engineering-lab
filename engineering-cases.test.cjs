@@ -28,7 +28,7 @@ for(const c of cases){
 }
 ok(index.indexOf('engineering-cases.js')>index.indexOf('content.js')&&index.indexOf('engineering-cases.js')<index.indexOf('app.js'),'data loads before renderer');
 ok(index.includes('data-nav="cases"'),'top navigation includes cases');
-ok(index.includes('20261020.1'),'cache bust');
+ok(index.includes('20261020.2'),'cache bust');
 ok(css.includes('.paused .hero-sweep,.paused .hero-sample{animation-play-state:paused}'),'animation pause rule preserved');
 ok(app.includes("const KEY='sensor-engineering-lab:v1'"),'local progress storage namespace preserved');
 ok(app.includes("Math.abs(n)<0.5*10**(-d)?0:Number(n)"),'zero display normalization preserved');
@@ -60,7 +60,11 @@ for(const route of routes){
  equal(r.writes[0][1].done,saved.done,route+' persisted lesson states unchanged');
  equal(r.writes[0][1].motion,false,route+' paused preference unchanged');
  equal(Object.keys(r.writes[0][1].done).sort(),lessons.slice().sort(),route+' no implicit new case completion');
+ if(route==='cases')equal((html.match(/aria-label="问题与方法速览"/g)||[]).length,6,'all six cards explain problem and method');
  if(route.startsWith('case/')&&route!=='case/missing'){
+   const intro=dataCtx.window.SensorCaseOverviews[route.slice(5)];
+   for(const field of ['problem','method','boundary','takeaway'])ok(html.includes(intro[field]),route+' overview '+field);
+   ok(html.indexOf('先看懂大意')<html.indexOf('硬件与软件条件'),route+' introduction comes before technical setup');
    ok(html.includes('待学习')&&html.includes('未本站实物复现'),route+' explicit pending status');
    ok(!r.events['#motion-toggle:click'],route+' no home binding');
    ok(html.includes('待执行的台架验收清单'),route+' verification plan');
