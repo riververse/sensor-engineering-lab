@@ -75,3 +75,15 @@ Run the focused original synthetic calculation/content regressions as well as al
     node ads1256-scan.test.cjs
 
 The focused suite freezes the previous four case objects and checks new timing, channel identity, error-budget and migration examples. Existing six lessons, timing module, styles and manual progress behavior are preserved. The new case remains pending reading; no completion state is inferred.
+
+## ADC and GPIO concurrency case (verified 2026-10-20)
+
+- `#case/st-dma2-gpio-contention`: a complementary STM32F407 design-review case about DMA2 AHB/APB2 concurrency when adding timer-paced GPIO excitation to three independent phase-staggered ADCs.
+- Sources: ES0182 Rev 19 §2.2.19 and AN4031 Rev 3 §4.9; route and register checks use the retained complete RM0090 Rev 22 PDF. The official RM0090 remote PDF could not be read on this check; that limitation is disclosed in the case.
+- Distinguishes request/stream selection, DMA port direction, direct-mode DMEIF, GPIO edge timing, analog settling and frame identity. Includes an explicitly unverified port-inversion candidate, not production firmware or a reproduced workaround.
+- Original exercises independently check conditional timing margins, logical payload accounting, source/destination increments and rejected frame identities. No vendor code, firmware, board procedure or untrusted candidate executable was run.
+- All previous five case objects, six lessons, numerical models, timing module, styles and manual progress behavior are preserved. No automatic completion state is added.
+
+Run all prior suites and:
+
+    node dma2-gpio.test.cjs

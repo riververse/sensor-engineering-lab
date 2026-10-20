@@ -391,5 +391,137 @@ window.SensorCases = [
       ]
     }
   ]
+},
+{
+  "id": "st-dma2-gpio-contention",
+  "maker": "ST",
+  "title": "DMA stream 没冲突，为什么采样联动仍会错？",
+  "subtitle": "STM32F407 · 三路错相 ADC / GPIO 激励 / DMA2 双端口",
+  "question": "在已能稳定采集的三路 ADC 旁边加一路定时 GPIO，为什么不能只查 stream 分配表？",
+  "summary": "沿请求、地址、总线端口和模拟建立逐项验收，把 DMA2 并发勘误与平均带宽、数据身份分开。",
+  "published": "2014-02-04",
+  "revision": "AN4031 Rev 3 · 2016-06-23；ES0182 Rev 19 · 2026-07；RM0090 Rev 22 · 2026-05",
+  "verified": "2026-10-20",
+  "evidence": "厂商手册 + 器件勘误 + 本站原创调度推演；无板卡或第三方实测",
+  "reproduction": "未本站实物复现",
+  "status": "待学习",
+  "lessons": [
+    "adc",
+    "driver",
+    "debug"
+  ],
+  "conditions": "限定 STM32F407，版本见上方；沿用 MCU 时序页的 TIM1 → TIM2 / TIM3 / TIM4、ADC1 / 2 / 3 独立模式、21 MHz ADC 时钟、12 bit、每帧各一次采样。这里新增的是文档导出的 GPIO 激励控制候选，并非 ST 已交付的完整三路联调参考设计。尚未选定板卡、封装、GPIO 引脚、外部激励电路或固件版本；连线与负载延迟待验证。未运行厂商代码或连接硬件。",
+  "timingRelated": true,
+  "sources": [
+    {
+      "id": "errata",
+      "label": "ST ES0182 Rev 19 · §2.2.19 / p.13，§2.7.2 / pp.17–18",
+      "url": "https://www.st.com/resource/en/errata_sheet/es0182-stm32f405407xx-and-stm32f415417xx-device-errata-stmicroelectronics.pdf",
+      "date": "采用 2026-07 修订版；适用器件与硅修订范围见首页和表 3"
+    },
+    {
+      "id": "dma",
+      "label": "ST AN4031 Rev 3 · §§1.1、4.9 / pp.6–14、33–35",
+      "url": "https://www.st.com/resource/en/application_note/an4031-using-the-stm32f2-stm32f4-and-stm32f7-series-dma-controller-stmicroelectronics.pdf",
+      "date": "首发 2014-02-04；采用 2016-06-23 修订版，日期见 p.37"
+    },
+    {
+      "id": "rm",
+      "label": "ST RM0090 Rev 22 · 表 44/45/68/98，DMA / ADC / TIM 寄存器",
+      "url": "https://www.st.com/resource/en/reference_manual/dm00031020-stm32f405415-stm32f407417-stm32f427437-and-stm32f429439-advanced-armbased-32bit-mcus-stmicroelectronics.pdf",
+      "date": "采用 2026-05 Rev 22；本次复核既有完整 PDF。官方远程 PDF 本次读取失败，未把搜索摘要的 Rev 21 当作 Rev 22"
+    }
+  ],
+  "blocks": [
+    {
+      "label": "01 / A NEW REQUEST IS A NEW PATH",
+      "title": "从三路采样，走到采样与激励联动",
+      "paragraphs": [
+        "本站拟议问题：每个 100 μs 帧内，ADC1、ADC2、ADC3 在 20、50、80 μs 附近开始各自的采集。现在希望 TIM1_CH1 比较事件每帧先更新一次 GPIO 激励状态，再由三路 ADC 观察响应。数据链从“定时器 → ADC → SRAM”扩展为“定时器 → DMA → GPIO → 外部模拟电路 → ADC → DMA → SRAM”。后半条链的延迟和状态也属于测量。",
+        "请求路由复核：沿用 ADC1 → DMA2 Stream0 / Channel0、ADC2 → Stream2 / Channel1、ADC3 → Stream1 / Channel2；另选 TIM1_CH1 → DMA2 Stream6 / Channel0。四个 stream 不重叠。同为 Channel0 不表示共享一个 stream；CHSEL 是每个 stream 的请求选择。本例只开 TIM1 的 CC1DE，并保持 CCDS = 0，不同时打开该复用请求上的 CC2DE / CC3DE。GPIO 地址不是请求源，TIM1 的比较才是节拍。沿用 TIM1 的 1 MHz 计数 tick，设 CCR1 = 5、CC1S = 00、OC1M = 000（定时比较）；CC1 预装载值在受控更新边界装载。此内部请求不要求把 TIM1_CH1 输出到引脚。",
+        "沿用的三条 ADC 触发链仍是 TIM1 Update/TRGO → ITR0，TIM2_CC2 / TIM3_OC1REF(TRGO、PWM2) / TIM4_CC4 → ADC1 / ADC2 / ADC3。相位由 CCR 决定，Reset 模式会覆盖 CNT 初始偏移；一个 ADC 的扫描是顺序采样，不能换个 DMA 标签就变成三个 ADC 同时采样或交错模式。新 GPIO 候选没有改变这些已说明的模式边界。"
+      ],
+      "sourceIds": [
+        "rm"
+      ]
+    },
+    {
+      "label": "02 / READ THE SILICON LIMIT",
+      "title": "不冲突的 stream，仍可能经过有条件限制的端口",
+      "paragraphs": [
+        "厂商勘误：ES0182 §2.2.19 指出，DMA2 同时服务 AHB 与 APB2 外设请求时，AHB 侧访问可能重复；列出的受影响操作包含经默认 peripheral port 写 GPIO。它特别区分了 GPIO 读取，以及重复访问内部 SRAM 不造成该项数据破坏的情形。不能把这条限制简写成“ADC DMA 一定会坏”，也不能因为没有 stream 冲突就排除它。",
+        "本站判断：给 GPIO 分配更高优先级、降低平均吞吐或观察一次 TC，都没有改变实际端口路径；这些办法不是该勘误列出的规避措施。只重复同一个 BSRR 置位/复位字时，逻辑值可能不变，但这不构成整个带时序状态序列的可靠性证明。错误是否可见、是否有诊断标志、延迟有多大，仍要分别验证。",
+        "这里没有复现故障，也没有来自独立第三方的发生概率或修复收益。勘误证明的是需要审查的条件；本站例子的失败率、最长延迟和系统精度均未知。"
+      ],
+      "sourceIds": [
+        "errata"
+      ]
+    },
+    {
+      "label": "03 / PORT NAMES ARE NOT PHYSICAL DESTINATIONS",
+      "title": "先简化硬件路径，再审查端口反转候选",
+      "paragraphs": [
+        "优先选择：如果激励只需要一个规则方波，而且选定引脚、极性、电气负载及通道资源都允许，可考虑让定时器直接输出 AF 波形，减少 GPIO DMA 这条路径；这不是任意 MUX 地址序列的替代品，也不是已核验的板级接线。本页没有指定 GPIO 引脚或替用户完成外部电路设计。",
+        "厂商文档给出的方向：让 GPIO 写入走 DMA2 memory port。AN4031 §4.9 解释两端口的可交换连接、预读、FIFO 及尾部数据约束。按照其机制和 RM0090 表 45 推导，一种待验证的“SRAM 模式字 → GPIOx_BSRR”候选是 DIR = 00，PAR 指向模式数组，M0AR 指向 BSRR；PINC = 1、MINC = 0，PSIZE = MSIZE = 32 bit，PFCTRL = 0、CIRC = 0、DBM = 0、PINCOS = 0，DMDIS = 0 采用直接模式。此模式由硬件令 MSIZE 与 PSIZE 相等、burst 为 single；配置仍写成一致值。NDTR 是 32-bit 命令条数，源数组须 4-byte 对齐并放入 DMA 可达 SRAM1 / SRAM2，不能放 CCM。看起来叫 Peripheral-to-memory，物理目的地仍可以是 GPIO。",
+        "这是针对文档端口规则的配置审查单，不是完整驱动。必须逐项核对 stream 请求、对齐、可达 SRAM、模式字内容、NDTR 单位与停止次序。不能只交换 PAR/M0AR 而保留原来的递增位；也不能用 DIR = 10 的 memory-to-memory 模式代替需要定时器节拍的传输。AN4031 的 Quad-SPI 示例不属于 F407，不能照搬其外设、stream 或初始化。",
+        "每次请求一字的候选刻意不用 FIFO 阈值攒写：GPIO 没有接收 FIFO，多字在阈值满足后连续送出，可能把本应分开的状态变化挤在一起。直接模式仍有仲裁与总线延迟；它只避免这里讨论的阈值批量释放，不等于 GPIO 与比较事件零延迟。尤其本候选为 direct P2M 且 MINC = 0：RM0090 §10.3.18 指出，前一目标写未结束又来请求时可能触发 DMEIF，并出现两个数据项连续写到同址。DMEIF 不自动停 stream；它与 ES0182 的重复访问是两种不同风险。"
+      ],
+      "sourceIds": [
+        "dma",
+        "rm",
+        "errata"
+      ]
+    },
+    {
+      "label": "04 / BUDGET THE WHOLE CAUSAL CHAIN",
+      "title": "采样提前量，要从 GPIO 真正改变时刻起算",
+      "formula": "本站假设：T = 100 μs；激励请求 = 5 μs；ADC 触发 = 20 / 50 / 80 μs\nGPIO 路径上界假设 2 μs + 模拟建立 10 μs + 设计余量 2 μs = 14 μs\n最早 ADC 与激励请求间隔 15 μs；15 − 14 = 1 μs（条件性余量）\n获取时间 = 28 / 21 = 1.333 μs；转换总时间 = (28 + 12) / 21 = 1.905 μs",
+      "paragraphs": [
+        "所有额外延迟和余量都是本站设定的练习参数，不是 F407 保证值或测量值。先保守要求模拟信号在最早的 ADC 触发之前已建立，不借用未知触发传播延迟增加预算。若 GPIO 路径在实际负载下为 4 μs，同样的算式得到 −1 μs，计划不通过；平均带宽再低，也不能补回丢失的建立时间。ADC 自身获取窗和输入源阻抗还要单独验收。",
+        "本站纯算术：三 ADC 每帧各搬一个 16-bit 结果，100 μs 帧率下原始结果流为 60,000 byte/s；GPIO 每帧一个 32-bit 模式字，源模式载荷为 40,000 byte/s。100,000 byte/s 是两类逻辑载荷之和，未计每次传输的读写总线交易、仲裁与其他主设备，不能作为 AHB 占用率或最坏延迟。",
+        "三路相位不同，记录应保留 frame_id、config_id、激励状态、预定相位与有效标志；DMA 回调到达时刻不是采样孔径。若激励更新超时，就把依赖它的整帧标为无效，不能拿“ADC 数据都到齐”替代“测量条件已成立”。单路 ADC 缺一次结果也不能把随后第 n 个数组元素与另两路第 n 个元素静默拼成一帧。"
+      ],
+      "sourceIds": [
+        "rm"
+      ]
+    },
+    {
+      "label": "05 / STARTUP IS PART OF THE EXPERIMENT",
+      "title": "UG、第一帧与模式数组，必须共享起点",
+      "paragraphs": [
+        "本站拟议协议：在触发关闭的准备阶段完成时钟、定时器预装载与 UG，设置三路 ADC/DMA 和 GPIO 模式流；随后才进入约定的帧起点。配置时的 UG 可能沿更新/TRGO 链传播，不能混进正式数据。预装载也不会自动把四个 stream、三个从定时器及软件标签变成原子事务。运行中改相位或模式表时，先停源、完成受控停流和旧消费者退出，再以新的 config_id 重建对齐；本例不宣称支持无缝热切换。",
+        "厂商时钟约束：接收端时钟必须先于主 TRGO 启用，接收事件时不能临时改变目标时钟分频。GPIO 输出锁存值、第一模式字和首个有效 ADC 帧要能对应；即使 ADC 自己运行正确，错一位的激励标签也会制造看似稳定的“传感器误差”。",
+        "为便于验收，本候选从有限长度模式表与可识别帧号开始，暂不自动循环 GPIO 模式流。模式表耗尽必须关闭后续激励/采样调度；不能把维持的旧电平标成一条已经执行的新命令。DBM 交替的是 M0AR/M1AR，不能用它为本候选 PAR 上的源模式数组自动双缓冲。三路 ADC 的循环/双缓冲仍须按已完成块移交，不能改动 DMA 正在写的块。停止 GPIO DMA 时出现的 TC 也不能自行证明全部 NDTR 项都按计划送达。以上是待实现状态协议，不是已运行的固件。"
+      ],
+      "sourceIds": [
+        "rm",
+        "dma",
+        "errata"
+      ]
+    },
+    {
+      "label": "06 / UNPERFORMED BENCH ACCEPTANCE",
+      "title": "待执行的台架验收清单",
+      "paragraphs": [
+        "以下计划尚未执行。仅在已确认安全隔离的低压台架上开展，GPIO 不直接驱动超额负载；先查引脚耐压、驱动电流、探头额定值及外部电路。"
+      ],
+      "bullets": [
+        "冻结配置：记录完整料号、硅修订、手册版本、时钟树、ITR/TRGO/EXTSEL、DMA 请求与两端口地址、每个递增位、数据宽度、PL 软件优先级、预装载位和模式表。未知封装引脚、外部连接、最坏 GPIO 延迟与模拟建立时间保持“待验证”。",
+        "先隔离层次：分别检查定时器标记、真实 GPIO 边沿、外部模拟响应与 ADC 数据；逻辑分析仪只能验证数字边沿，不能证明模拟已建立。对每个有效帧验证激励状态身份和三路数量，保留原始记录。",
+        "在明确允许的负载组合下比较单路/并发路径，记录请求到 GPIO 的最大延迟、漏/重复状态、ADC OVR、DMA TE/DME/FE、缺帧与应用积压。通过标准来自预先写出的预算；没有捕获异常不等于排除了低概率勘误。",
+        "覆盖首帧、末字、停止中断、重启、模式表变更、延迟超预算、单 ADC 丢样与块处理超时。任一路身份或时限不明就拒绝整帧，不用最后一个旧值冒充成功；清楚区分文档核验、原创模型通过、实际驱动与实物测试。"
+      ]
+    },
+    {
+      "label": "07 / TRANSFER THE METHOD",
+      "title": "练习：把“采到了”拆成四个验收条件",
+      "paragraphs": [
+        "练习一：保持 100 μs 帧长与 5 μs 激励请求，将最早 ADC 相位从 20 改为 10 μs。上面 14 μs 的路径假设仍成立时，余量变为 −9 μs；不要只看各 ADC 的 1.905 μs 转换时间小于一帧就判为可行。再把最早相位改为 30 μs，条件性余量为 11 μs，仍需实测证据支撑那个 2 μs 上界。",
+        "练习二：模式数组以 0x20001000 为假定起点，每项 32 bit，目标 BSRR 固定。端口反转后连续三次应读取 0x20001000、0x20001004、0x20001008，写入同一目标地址。若把 PINC/MINC 留成 0/1，就会反复读第一个模式字，并走向目标之后的寄存器；这是地址模型反例，不在硬件上执行。",
+        "迁移回 MCU 时序页检查三路相位；回到 ADC 建立实验解释“数字事件准时”为什么还不够。四项验收分别是路由合法、数据搬运有序、外部条件已建立、数据身份可信，任何一项都不能由其他项自动替代。",
+        "许可与边界：这里仅链接官方手册并提供原创分析、算术和地址模型，没有复制或运行厂商驱动、代码示例或图表。公开手册不是开源代码许可证；后续软件、硬件设计文件及商标分别适用各自许可。本站没有获得或声称第三方测试背书，未证明量产可靠性。"
+      ]
+    }
+  ]
 }
 ];
