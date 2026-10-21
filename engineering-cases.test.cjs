@@ -11,24 +11,24 @@ const dataCtx={window:{}};vm.createContext(dataCtx);vm.runInContext(read('engine
 const cases=JSON.parse(JSON.stringify(dataCtx.window.SensorCases));
 const lessons=['driver','adc','reference','error','calibration','debug'];
 const routes=['home','path','sources','cases','timing',...lessons.map(id=>'lesson/'+id),...cases.map(c=>'case/'+c.id),'case/missing','unrecognized'];
-equal(cases.map(c=>c.id),['ti-tipd120','adi-cn0359','st-an4073','st-adc-overrun','ti-ads1256-mux','st-dma2-gpio-contention'],'stable case deep links');
+equal(cases.map(c=>c.id),['ti-tipd120','adi-cn0359','st-an4073','st-adc-overrun','ti-ads1256-mux','st-dma2-gpio-contention','st-m7-adc-cache'],'stable case deep links');
 for(const c of cases){
- equal(c.status,'待学习',c.id+' pending');equal(c.reproduction,'未本站实物复现',c.id+' reproduction boundary');equal(c.verified,c.id==='st-dma2-gpio-contention'?'2026-10-20':c.id==='ti-ads1256-mux'?'2026-10-19':c.id==='st-adc-overrun'?'2026-10-18':'2026-10-17',c.id+' verification date');
+ equal(c.status,'待学习',c.id+' pending');equal(c.reproduction,'未本站实物复现',c.id+' reproduction boundary');equal(c.verified,c.id==='st-m7-adc-cache'?'2026-10-21':c.id==='st-dma2-gpio-contention'?'2026-10-20':c.id==='ti-ads1256-mux'?'2026-10-19':c.id==='st-adc-overrun'?'2026-10-18':'2026-10-17',c.id+' verification date');
  ok(/^\d{4}-\d{2}(-\d{2})?$/.test(c.published),c.id+' original publication date');
  ok(c.revision.length>15&&c.conditions.includes('版本'),c.id+' version/conditions');
  ok(c.evidence.includes('厂商')&&c.sources.length>0,c.id+' evidence category');
- ok(c.blocks.length===(['ti-ads1256-mux','st-dma2-gpio-contention'].includes(c.id)?7:c.id==='st-adc-overrun'?6:5),c.id+' full case structure');
+ ok(c.blocks.length===(['ti-ads1256-mux','st-dma2-gpio-contention','st-m7-adc-cache'].includes(c.id)?7:c.id==='st-adc-overrun'?6:5),c.id+' full case structure');
  ok(c.blocks.some(b=>b.bullets?.length===4),c.id+' actionable unexecuted checklist');
  ok(c.blocks.some(b=>b.formula),c.id+' explicit calculation');
  ok(c.lessons.every(id=>lessons.includes(id)),c.id+' valid lesson references');
  equal(new Set(c.sources.map(s=>s.id)).size,c.sources.length,c.id+' unique source IDs');
- for(const source of c.sources){const url=new URL(source.url);ok(url.protocol==='https:'&&(['www.ti.com','www.st.com','www.analog.com'].includes(url.hostname)||(url.hostname==='github.com'&&url.pathname.startsWith('/STMicroelectronics/stm32f4xx-hal-driver/blob/1f6451c3e07728b4c830744de380e56bf5bc0026/'))),c.id+' official HTTPS source');ok(source.date.length>10,c.id+' source date available or explicitly unavailable');}
+ for(const source of c.sources){const url=new URL(source.url);ok(url.protocol==='https:'&&(['www.ti.com','www.st.com','www.analog.com','community.st.com','community.arm.com','arm-software.github.io'].includes(url.hostname)||(url.hostname==='github.com'&&url.pathname.startsWith('/STMicroelectronics/stm32f4xx-hal-driver/blob/1f6451c3e07728b4c830744de380e56bf5bc0026/'))),c.id+' official HTTPS source');ok(source.date.length>10,c.id+' source date available or explicitly unavailable');}
  for(const b of c.blocks)for(const id of b.sourceIds||[])ok(c.sources.some(s=>s.id===id),c.id+' resolved claim citation');
  ok(c.blocks.find(b=>b.title==='待执行的台架验收清单').paragraphs.join('').includes('尚未执行'),c.id+' bench plan is unexecuted');
 }
 ok(index.indexOf('engineering-cases.js')>index.indexOf('content.js')&&index.indexOf('engineering-cases.js')<index.indexOf('app.js'),'data loads before renderer');
 ok(index.includes('data-nav="cases"'),'top navigation includes cases');
-ok(index.includes('20261020.2'),'cache bust');
+ok(index.includes('20261021.1'),'cache bust');
 ok(css.includes('.paused .hero-sweep,.paused .hero-sample{animation-play-state:paused}'),'animation pause rule preserved');
 ok(app.includes("const KEY='sensor-engineering-lab:v1'"),'local progress storage namespace preserved');
 ok(app.includes("Math.abs(n)<0.5*10**(-d)?0:Number(n)"),'zero display normalization preserved');
@@ -60,7 +60,7 @@ for(const route of routes){
  equal(r.writes[0][1].done,saved.done,route+' persisted lesson states unchanged');
  equal(r.writes[0][1].motion,false,route+' paused preference unchanged');
  equal(Object.keys(r.writes[0][1].done).sort(),lessons.slice().sort(),route+' no implicit new case completion');
- if(route==='cases')equal((html.match(/aria-label="问题与方法速览"/g)||[]).length,6,'all six cards explain problem and method');
+ if(route==='cases')equal((html.match(/aria-label="问题与方法速览"/g)||[]).length,7,'all seven cards explain problem and method');
  if(route.startsWith('case/')&&route!=='case/missing'){
    const intro=dataCtx.window.SensorCaseOverviews[route.slice(5)];
    for(const field of ['problem','method','boundary','takeaway'])ok(html.includes(intro[field]),route+' overview '+field);

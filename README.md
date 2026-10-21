@@ -93,3 +93,11 @@ Run all prior suites and:
 All six case cards begin with the problem and the rough method. Detail pages additionally state the evidence boundary and a single takeaway before hardware conditions and register-level discussion. `SensorCaseOverviews` in `engineering-cases.js` is a separate presentation layer: original case evidence, dates, sources, formulas and learning status are retained unchanged. When adding a case, provide all four overview fields and keep untested proposals distinct from measured solutions.
 
 Run `node case-overviews.test.cjs` alongside all existing suites. No build generator or learning-state migration is introduced.
+
+## Cortex-M7 ADC DMA cache case (verified 2026-10-21)
+
+- `#case/st-m7-adc-cache`: STM32H743 memory reachability, cache visibility and whole-cache-line buffer ownership are separate contracts.
+- Sources: AN4839 Rev 2, RM0433 Rev 9 (2026-10-02), ST employee guidance, Arm employee explanation and CMSIS API documentation. No vendor code or board procedure was executed.
+- Original address and timing exercises cover 32-byte lines, shared half-buffer boundaries and a 2 ms reuse window. They are arithmetic/protocol teaching checks, not hardware simulation or a production driver.
+- The first six case objects, their plain-language overviews, lessons, timing workbench, designs and user-controlled local state remain unchanged.
+- Run `node adc-cache.test.cjs` with all existing suites.

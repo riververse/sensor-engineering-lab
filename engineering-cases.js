@@ -523,6 +523,143 @@ window.SensorCases = [
       ]
     }
   ]
+},
+{
+  "id": "st-m7-adc-cache",
+  "maker": "ST",
+  "title": "ADC 已搬完，CPU 为什么还读到旧数据？",
+  "subtitle": "STM32H743 · Cortex-M7 D-Cache / 32-byte 缓存行 / 接收块所有权",
+  "question": "DMA 完成中断到了、数组却没更新，是 ADC 没采到吗？",
+  "summary": "把地址可达、缓存可见与缓冲区所有权分开检查，不用关缓存掩盖交接错误。",
+  "published": "2016-03-23",
+  "revision": "AN4839 Rev 2 · 2018-03-06；RM0433 Rev 9 · 2026-10-02",
+  "verified": "2026-10-21",
+  "evidence": "厂商缓存示例与手册核对 + 本站接收协议和验收推演",
+  "reproduction": "未本站实物复现",
+  "status": "待学习",
+  "lessons": [
+    "adc",
+    "debug",
+    "error"
+  ],
+  "conditions": "教学目标限定单核 STM32H743 的 ADC 接收缓冲区，DMA1/2 写入可达 SRAM，Cortex-M7 D-Cache 开启、目标区域为 Normal write-back。未指定板卡、硅修订、采样时钟、ADC 请求/stream 路由、HAL/CMSIS 构建版本或编译器；不是可直接烧录的配置。AN4839 的原始示例是内存到内存复制，不是本文 ADC 台架实测。原始日期指 AN4839 首版，核验日期不是实验日期。",
+  "sources": [
+    {
+      "id": "an",
+      "label": "ST AN4839 Rev 2 · §§2.1、3.2、4；修订记录 p.9",
+      "url": "https://www.st.com/resource/en/application_note/an4839-level-1-cache-on-stm32f7-series-and-stm32h7-series-stmicroelectronics.pdf",
+      "date": "首版 2016-03-23；Rev 2 2018-03-06。核验 2026-10-21；示例不提供本文 ADC 测试记录。"
+    },
+    {
+      "id": "rm",
+      "label": "ST RM0433 Rev 9 · Table 3 p.104、§2.4 p.136、Table 637",
+      "url": "https://www.st.com/resource/en/reference_manual/rm0433-stm32h743-753-and-stm32h750-value-line-advanced-arm-based-32-bit-mcus-stmicroelectronics.pdf",
+      "date": "首版 2016-12-12；Rev 9 2026-10-02，3329 页。核验 2026-10-21：官方 PDF 下载、文本与互连表图像均已核对；搜索索引仍可能显示旧 Rev 8。"
+    },
+    {
+      "id": "faq",
+      "label": "ST 员工技术说明 · DMA is not working on STM32H7 devices",
+      "url": "https://community.st.com/stm32-mcus-60/dma-is-not-working-on-stm32h7-devices-97",
+      "date": "页面首发 2018-07-23；动态网页未锁定修订号，核验 2026-10-21。仅引用作者正文，不把评论中的建议当实测。"
+    },
+    {
+      "id": "arm",
+      "label": "Arm 员工答复 · Cortex-M7 推测读取与 DMA 缓冲区",
+      "url": "https://community.arm.com/forums/f/architectures-and-processors-forum/52740/on-cortex-m7-can-speculative-access-bring-accessed-data-to-d-cache/177510",
+      "date": "页面只显示相对时间，未确认精确首发日期；核验 2026-10-21。引用 Zenon (Zhilong) Xiu 的机制说明，不引用匿名评论作硬件保证。"
+    },
+    {
+      "id": "cmsis",
+      "label": "Arm CMSIS-Core · D-Cache Functions API 文档",
+      "url": "https://arm-software.github.io/CMSIS_6/main/Core/group__Dcache__functions__m7.html",
+      "date": "CMSIS_6 main 动态文档，核验 2026-10-21；只核对按地址操作的 32-byte 对齐与 byte 长度口径，不声称锁定软件版本。"
+    }
+  ],
+  "blocks": [
+    {
+      "label": "01 / THE REAL CONSTRAINT",
+      "title": "搬运完成与 CPU 看见新值，是两件事",
+      "paragraphs": [
+        "厂商说明：AN4839 展示 CPU 和 DMA 共享可缓存内存时的可见性问题。clean 把脏缓存行写回内存；invalidate 丢弃缓存中的副本。它们方向不同，不能把两个词当成“刷新”的同义词。",
+        "本站问题模型：ADC 结果已由 DMA 写到 SRAM，CPU 却可能命中旧的 D-Cache 副本。volatile 只能约束编译器对访问的处理，不会完成硬件缓存维护；反过来，invalidate 也不会修复 ADC 溢出、错误地址或消费者处理太慢。先判断是哪一层失败。"
+      ],
+      "sourceIds": [
+        "an",
+        "faq"
+      ]
+    },
+    {
+      "label": "02 / CHECK REACHABILITY FIRST",
+      "title": "“不缓存的内存”不一定能被这个 DMA 访问",
+      "paragraphs": [
+        "精确型号边界：RM0433 Rev 9 Table 3 中，STM32H743 的 DMA1/2 无法访问 ITCM/DTCM；§2.4 给出 DTCM 起点 0x20000000，CPU 和 MDMA 有对应访问路径。AXI SRAM 起点 0x24000000、D2 SRAM1 起点 0x30000000，可供 DMA1/2 使用。是否可缓存则取决于 CPU 路径和 MPU 属性，是另一项检查。",
+        "不能把 AN4839 的 SRAM→DTCM 示例拓扑直接套到 H743 DMA1/2，也不能把 H743 结论扩展为所有 F7/H7 或所有 DMA 引擎都相同。本文不指定 ADC 请求编号、引脚或寄存器连线；实际工程须再次核对具体料号、勘误、DMA 请求映射、内存时钟和链接映射。"
+      ],
+      "sourceIds": [
+        "rm",
+        "an"
+      ]
+    },
+    {
+      "label": "03 / RECEIVE IS AN OWNERSHIP PROTOCOL",
+      "title": "接收前清掉隐患，接收后丢掉旧副本",
+      "paragraphs": [
+        "本站拟议协议，前提是块独占完整缓存行、没有相邻对象共用，旧接收内容可丢弃，缓存已正确初始化。CPU 准备好块后，在启动 DMA 前 invalidate 这些行，避免旧脏行随后被逐出并覆盖 DMA 的新结果；若确有必须保留的旧内容，应先重新设计分区，或在 DMA 尚未启动时按用途完成 clean/invalidate，不能事后补救。",
+        "移交给 DMA 后，CPU、其他任务和中断都不得读写该块。确认对应块已完成且 DMA 不再写它，再 invalidate 完整块，然后才由 CPU 读取。Arm 员工说明 Cortex-M7 可能因访问模式、相邻可缓存内存而进行推测读取，所以“代码没有主动读数组”不能替代接收完成后的 invalidate。",
+        "CPU 处理结束后才把块归还给 DMA。缓存维护和启动/完成的顺序应使用目标 CMSIS 与架构要求的屏障保证，不能凭空假设普通函数调用或中断就提供全部顺序。发送路径另论：CPU 先写数据、clean 到内存并完成必要顺序，再交给 DMA 读取；不要在 DMA 已写入接收结果后 clean 旧缓存去覆盖它。"
+      ],
+      "sourceIds": [
+        "faq",
+        "arm",
+        "an",
+        "cmsis"
+      ]
+    },
+    {
+      "label": "04 / OWN THE WHOLE CACHE LINE",
+      "title": "16 个半字是一行，半缓冲边界也要对齐",
+      "formula": "缓存行 L = 32 byte；16-bit 样本每行可放 16 个\n示意：每块 96 个样本 × 2 byte = 192 byte = 6 行\n两个独立块共 384 byte；第二块起点 A + 192 仍为 32-byte 对齐\n反例：每半块 50 个样本 = 100 byte；第二半块偏移 100 mod 32 = 4 byte",
+      "paragraphs": [
+        "本站地址推演：若环形数组首地址 A 已对齐，每半块 100 byte，分界落在从 A+96 开始的那一行。CPU 维护前半块时会碰到 DMA 正在写的后半块；给整个数组加一个对齐声明并不能解决半块共用行。应让每次独立交接的块大小也为 32 byte 的整数倍，并把状态标志、计数器及其他对象放在块外独立缓存行。",
+        "范围检查的纯算术为 start = floor(A/32)×32，end = ceil((A+N)/32)×32，维护长度 end−start。向外取整只算出受影响的行，并不授权破坏相邻对象。CMSIS 按地址 API 的长度单位是 byte，不是样本数；真实实现还须检查地址加法溢出和链接器最终布局。"
+      ],
+      "sourceIds": [
+        "cmsis",
+        "faq"
+      ]
+    },
+    {
+      "label": "05 / COMPLETION IS NOT A LOCK",
+      "title": "循环 DMA 不会等 CPU 完成阅读",
+      "formula": "本站假设：单通道 48,000 sample/s，每块 96 个 16-bit 样本\n块间隔 = 96 / 48,000 = 2 ms；逻辑数据量 = 96,000 byte/s\n交接延迟 + 缓存维护 + CPU 读取/复制 + 调度余量 < 2 ms",
+      "paragraphs": [
+        "纯预算，不是测量：若双半缓冲交替填充，某半块完成后，CPU 通常只有另一半块填满的时间窗口；必须按实际启动与重用时刻核对。示意总耗时 2.3 ms 已超出 2 ms 窗口，缓存操作再正确也会发生读写竞态。不要把完成回调视为永久拥有缓冲区的锁。",
+        "拟议验收：使用块编号和采集代次记录每次移交；预算不足时，选择暂停源的受控块传输、增加真正独立且可用的缓冲块，或在窗口内复制到 CPU 私有区。超过窗口的块必须拒绝，不能靠事后再 invalidate 修复。元数据不得与 DMA 数据共用维护行，发布它仍须使用适合任务/中断模型的同步。"
+      ]
+    },
+    {
+      "label": "06 / UNPERFORMED BENCH ACCEPTANCE",
+      "title": "待执行的台架验收清单",
+      "paragraphs": [
+        "以下是依据文档设计的验收方法，尚未执行；没有本站实测性能、错误率或量产可靠性证据。物理 ADC 测试仅限确认安全隔离的低压台架。"
+      ],
+      "bullets": [
+        "冻结条件：完整料号与硅修订、官方勘误、板卡、编译器、优化、HAL/CMSIS 版本、MPU/cache 配置、实际缓冲地址与 map 文件、块长度和维护范围。检查 DMA 可达性与整行独占。",
+        "先以可识别序号/模式的受控搬运验证软件交接，再接 ADC 的已知低压输入与可辨识阶跃；前者不是 ADC 精度测试，后者也不能单靠波形看似正确证明没有丢块。",
+        "比较专用 Normal non-cacheable 区和 cacheable 区加完整维护协议；可在受控调试配置比较关闭 D-Cache，但须正确初始化/停用，不能运行中粗暴切换或把性能变化误判为协议已修复。",
+        "增加允许范围内的 CPU 内存负载和中断延迟，记录旧块、重复块、漏块、相邻哨兵破坏、ADC OVR、DMA 错误、移交到处理结束的最长时间。邻接哨兵应在独立缓存行；故意共用行仅作为软件地址反例，不推荐在实际数据上破坏性验证。 覆盖首块、停流、重启、半块边界与消费者超时。应用门限应在测试前写明：有效块身份完整、无越界修改、无未解释 DMA/ADC 错误，处理有足够时间余量；某次零异常不等于排除了低概率故障。"
+      ]
+    },
+    {
+      "label": "07 / TRANSFER THE METHOD",
+      "title": "从“加一行 invalidate”改为完整交接约定",
+      "paragraphs": [
+        "练习一：每块 96 个 16-bit 样本改为 100 个，块长变为 200 byte，200 mod 32 = 8，第二块不再对齐。若只是把缓存维护长度向上取到 224 byte，却仍让下一块紧邻，会触碰别人的数据；应重新安排实际存储间距和 DMA 块长度，而非只改维护参数。",
+        "练习二：48 ksample/s 改为 96 ksample/s，96 样本的窗口降为 1 ms。原来 1.2 ms 的处理路径即使在低速时通过，高速也不通过。缓存一致性、内存可达性与实时截止时间必须各自验收。",
+        "许可与证据：本站仅链接官方文档并给出原创解释、算术和待执行的验收计划，未复制厂商图表、下载或执行项目代码。公开手册与论坛内容不等于开源软件许可；后续采用 CMSIS、HAL 或示例代码必须分别核对其实际版本与许可证。AN4839 的示例现象不构成本文 H743 ADC 系统的公开实测数据或性能保证。"
+      ]
+    }
+  ]
 }
 ];
 
@@ -564,5 +701,11 @@ window.SensorCaseOverviews = {
     "method": "分开检查资源分配、芯片已知限制、总线访问路径，以及引脚改变后信号是否来得及稳定；逐项算最坏时间，而不是只看平均数据量。",
     "boundary": "这是针对 STM32F407 的文档排查与调度推演，候选改法尚未板测。不同 DMA 资源不冲突，不代表芯片并发限制已经排除。",
     "takeaway": "“配置不打架”只是第一关，还要证明数据能按时搬走、信号稳定后才采样。"
-  }
+  },
+  "st-m7-adc-cache": {
+  "problem": "ADC 的数据搬运已经结束，程序读到的却像上一批结果；或者把数组挪到一块“快内存”后，DMA 根本写不进去。",
+  "method": "先确认这个 DMA 能到达缓冲区，再按整条缓存行分块；DMA 接收前后做对应的缓存维护，明确 CPU 和 DMA 何时交接每一块。",
+  "boundary": "这是按 ST 与 Arm 文档推导的 STM32H743 接收设计和验收计划，尚未做板卡实测。F7/H7 不同型号与 DMA 引擎不能直接套用；缓存正确也不能解决处理超时。",
+  "takeaway": "“DMA 搬完了”不等于“CPU 已看到新数据”；内存路径、缓存可见性和块所有权都要对上。"
+}
 };
