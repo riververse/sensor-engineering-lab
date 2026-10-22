@@ -101,3 +101,8 @@ Run `node case-overviews.test.cjs` alongside all existing suites. No build gener
 - Original address and timing exercises cover 32-byte lines, shared half-buffer boundaries and a 2 ms reuse window. They are arithmetic/protocol teaching checks, not hardware simulation or a production driver.
 - The first six case objects, their plain-language overviews, lessons, timing workbench, designs and user-controlled local state remain unchanged.
 - Run `node adc-cache.test.cjs` with all existing suites.
+
+## Center-aligned trigger case (verified 2026-10-22)
+
+- `#case/st-center-aligned-trigger`: STM32F407 TIM2 Compare Pulse versus OC2REF, ADC edge selection, paired preload commits and first-frame boundaries. RM0090 Rev 22, DS8626 Rev 12 and ES0182 Rev 19 are checked; this is documentation analysis plus an original model, not board reproduction or deployable firmware.
+- `node center-aligned.test.cjs` checks CMS-specific compare events, steady-state OCREF transitions, split preload generations and the explicitly hypothetical ADC timing budget. All seven prior cases and manual learning state are preserved.
