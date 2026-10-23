@@ -106,3 +106,12 @@ Run `node case-overviews.test.cjs` alongside all existing suites. No build gener
 
 - `#case/st-center-aligned-trigger`: STM32F407 TIM2 Compare Pulse versus OC2REF, ADC edge selection, paired preload commits and first-frame boundaries. RM0090 Rev 22, DS8626 Rev 12 and ES0182 Rev 19 are checked; this is documentation analysis plus an original model, not board reproduction or deployable firmware.
 - `node center-aligned.test.cjs` checks CMS-specific compare events, steady-state OCREF transitions, split preload generations and the explicitly hypothetical ADC timing budget. All seven prior cases and manual learning state are preserved.
+
+
+## Multiplexer order-dependent error case (verified 2026-10-23)
+
+- `#case/adi-mux-order-memory`: compare fixed-channel and alternating-channel histograms, separating mean shift from code dispersion.
+- Sources: ADI AN-2573 Rev. A (April 2024; original CN-0292 November 2014), Analog Dialogue 52-04 (April 2018), and AN-1024 Rev. 0 (July 2009).
+- The AD7176-2 reference circuit uses a sigma-delta ADC; the independent single-pole recurrence is not its internal model or a firmware configuration. Synthetic order, settling and three-channel scheduling checks are not board reproduction.
+- All eight prior cases, their overviews, six original lessons, styles, timing workbench and manual state remain unchanged.
+- Run `node mux-memory.test.cjs` together with all existing test suites. No generator is used for this data file.
