@@ -53,6 +53,6 @@ for(const channels of [1,2,4,8])for(const addedGuard of [0,guard,100])for(const 
  ok(1e6/t<=totalRate/channels+1e-10,'guards cannot improve nominal per-channel rate');
 }
 ok(read('app.js').includes('${engineeringCases.length} 个问题'),'case count does not remain hard-coded to four');
-ok(read('index.html').includes('九篇来源核验工程案例'),'metadata describes nine cases');
+ok(read('index.html').includes('十篇来源核验工程案例'),'metadata describes ten cases');
 ok(read('README.md').includes('#case/ti-ads1256-mux'),'new route documented');
 console.log(`${checks} ADS1256 publication-content and independently recomputed budget checks passed. No hardware or driver reproduction.`);
