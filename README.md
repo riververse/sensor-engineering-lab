@@ -115,3 +115,10 @@ Run `node case-overviews.test.cjs` alongside all existing suites. No build gener
 - The AD7176-2 reference circuit uses a sigma-delta ADC; the independent single-pole recurrence is not its internal model or a firmware configuration. Synthetic order, settling and three-channel scheduling checks are not board reproduction.
 - All eight prior cases, their overviews, six original lessons, styles, timing workbench and manual state remain unchanged.
 - Run `node mux-memory.test.cjs` together with all existing test suites. No generator is used for this data file.
+
+
+## Triple ADC frame identity (verified 2026-10-25)
+
+- `#case/stm32f407-triple-simultaneous-identity`: RM0090 Rev 22 and ES0182 Rev 19; distinguish simultaneous conversion from the sequential mode 1 DMA stream, incomplete frames and half-buffer boundaries.
+- The documented halfword/32-bit wording discrepancy remains explicit and requires bench verification. No pin mapping, deployable firmware or board reproduction is claimed.
+- Run `node triple-adc.test.cjs` with all existing suites. Eleven pending cases preserve prior content and manual learning state.

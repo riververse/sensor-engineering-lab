@@ -1101,3 +1101,131 @@ window.SensorCaseOverviews["ti-ads131m04-time-identity"] = {
   "boundary": "厂商参考设计采用软件补偿并有台架结果；本站时间模型和验收清单未实物复现，不提供市电实验或可烧录驱动。",
   "takeaway": "同时采样解决了一类时差，不会自动给出正确时间戳。"
 };
+
+// Triple ADC frame identity: original explanation and model; not board reproduction.
+window.SensorCases.push({
+  "id": "stm32f407-triple-simultaneous-identity",
+  "maker": "ST",
+  "title": "三路同时采到了，为什么内存里还会认错通道？",
+  "subtitle": "STM32F407 · 三 ADC regular simultaneous / CDR / DMA mode 1",
+  "question": "同一次触发产生三个样本，怎样保住它们的通道身份与帧边界？",
+  "summary": "用主 ADC 的共同触发消除有意错相，再用 DMA 数据契约证明每个数来自谁。",
+  "published": "2026-05-04",
+  "revision": "RM0090 Rev 22 · 2026-05；ES0182 Rev 19 · 2026-07",
+  "verified": "2026-10-25",
+  "evidence": "厂商成熟外设机制与官方手册 + 本站原创身份/预算模型；不是公开台架性能复现",
+  "reproduction": "未本站实物复现",
+  "status": "待学习",
+  "lessons": [
+    "adc",
+    "error",
+    "debug"
+  ],
+  "conditions": "对象限定 STM32F407，三 ADC regular simultaneous、各一项规则序列、相同采样时间、12 位右对齐、外部定时触发，禁止 injected。数值预算是假设 fADC=21 MHz、采样56周期、20 kframe/s 的教学配置，并非已验证板卡。板卡封装、引脚和前端未冻结，不提供直接接线或可烧录配置。published 表示所核验手册版本日期，不表示技术首次发表。",
+  "sources": [
+    {
+      "id": "manual",
+      "label": "ST RM0090 Rev 22 · §§13.5、13.9、13.9.2、13.13.16；Table 44/68",
+      "url": "https://www.st.com/resource/en/reference_manual/rm0090-stm32f405415-stm32f407417-stm32f427437-and-stm32f429439-advanced-armbased-32bit-mcus-stmicroelectronics.pdf",
+      "date": "2026-05；修订表 04-May-2026。2026-10-25 直接核验 PDF，非搜索缓存 Rev21。"
+    },
+    {
+      "id": "errata",
+      "label": "ST ES0182 Rev 19 · §§2.2.19、2.5.1 与芯片修订适用表",
+      "url": "https://www.st.com/resource/en/errata_sheet/es0182-stm32f405407xx-and-stm32f415417xx-device-errata-stmicroelectronics.pdf",
+      "date": "2026-07；修订表 17-Jul-2026；核验 2026-10-25。"
+    },
+    {
+      "id": "legacy",
+      "label": "ST AN3116 Rev 1 · §2：旧代双 ADC 资料的迁移边界",
+      "url": "https://www.st.com/resource/en/application_note/cd00258017-stm32-s-adc-modes-and-their-applications-stmicroelectronics.pdf",
+      "date": "2010-03-02；此应用笔记不是 F407 三 ADC 数据打包依据。"
+    }
+  ],
+  "blocks": [
+    {
+      "label": "01 / THE REAL CONSTRAINT",
+      "title": "同时采样、独立错相和单 ADC 扫描是三种问题",
+      "paragraphs": [
+        "已有独立错相方案把三路采样安排在不同时间；本例恰好相反：希望三个不同输入共享一次采集时刻。单 ADC 扫描三个通道仍是依次取得数据，不能因一个数组含三项就叫同时采样。",
+        "共同触发不等于零模拟误差。不同前端的群延迟、源阻抗和采样保持建立仍需验收；本例只解决明确的触发关系和软件身份，不声称跨通道绝对零偏斜。"
+      ]
+    },
+    {
+      "label": "02 / MASTER AND SLAVES",
+      "title": "一个主触发，不是给三个 ADC 各发一次软件命令",
+      "paragraphs": [
+        "RM0090 规定由 ADC1 规则组的 EXTSEL 选择外部事件，并把同步触发送到 ADC2/3。本例使用 MULTI=10110；各 ADC 一项序列、相同采样时间，禁用 injected，定时逐帧而非启动后自由连续运行。",
+        "表68列出 TIM2_TRGO 对应 EXTSEL=0110；表44列出 ADC1 的 DMA2 Channel 0 Stream 0/4。这里只证明片内路由存在，不替代板卡资源冲突、定时器时钟和引脚检查。",
+        "AN3116 Rev1 属于早期双 ADC 语境，甚至说明 ADC3 独立。不能把其中数据寄存器或时钟数字搬到 F407；本例以 RM0090 对应章节为准。"
+      ],
+      "sourceIds": [
+        "manual",
+        "legacy"
+      ]
+    },
+    {
+      "label": "03 / DATA IDENTITY",
+      "title": "mode 1 是 ADC1、ADC2、ADC3 逐项，不是三路装进一个字",
+      "paragraphs": [
+        "本例只用 common CDR 的 DMA mode 1：每次请求一项半字，三项构成一帧。缓冲解释为 [A0,B0,C0,A1,B1,C1,…]，索引3k+r的r代表ADC身份，不代表先后采样时刻。",
+        "手册一致性警告：Rev22 p405 与 p430 描述逐半字，p408 却仍称三次32位传输请求。本教学模型按前两处的 mode1 半字语义建立，必须在台架核对 DMA PSIZE/MSIZE、NDTR 和实际缓冲跨度，不把文字矛盾藏起来。",
+        "mode2 的三ADC轮转配对属于 interleaved，不能当作本例优化开关；regular simultaneous 使用 mode2 的适用条件是双ADC。不要把DMA搬运次序误解成三个模拟采样故意错开。"
+      ],
+      "formula": "mode1：uint16 样本流 → 每帧3项 → 每帧6字节\n双半缓冲若每半含N帧：总长度6N项，每半3N项\n例如N=64：总384项=768字节；每半192项=384字节",
+      "sourceIds": [
+        "manual"
+      ]
+    },
+    {
+      "label": "04 / ORIGINAL TIMING BUDGET",
+      "title": "计算并行采集时间，不把三次转换相加",
+      "paragraphs": [
+        "本站假设 fADC=21 MHz，12位、采样56周期。单 ADC 占用(56+12)/21 MHz≈3.238 μs；三路并行时仍以最长一路占用作为采集预算，不是9.714 μs。50 μs帧周期留下约46.762 μs算术余量，但尚未扣除触发同步、DMA争用与应用处理。",
+        "20 kframe/s得到每路20 ksample/s，三路总计60 ksample/s；mode1有效载荷120 kB/s。该数字不等于总线事务占用，也不等于峰值突发带宽。每半64帧给消费者3.2 ms名义处理窗口，必须测最坏路径而不是平均耗时。"
+      ],
+      "formula": "Tframe = 1/20,000 = 50 μs\nTadc = (56+12)/21 MHz ≈ 3.238 μs\n载荷 = 20,000 × 3 × 2 = 120,000 B/s\n半缓冲时间 = 64 / 20,000 = 3.2 ms"
+    },
+    {
+      "label": "05 / FAILURE AND RECOVERY",
+      "title": "数值看起来合理，仍可能已错了一整列",
+      "paragraphs": [
+        "原创模型用 A、B、C 三个不重叠数值区间和帧号编码检查解包。删掉一个样本后，后续3k分组会全部错位；没有计数、配置代号和有效状态，仅凭波形平滑可能发现不了。模型标签只供离线测试，真实ADC不会自动附带通道号。",
+        "RM0090 说明多ADC发生overrun可停止DMA请求。建议故障后先停止触发、保存错误状态并丢弃不完整帧，按所用驱动的已核验流程重新建立ADC/DMA和帧相位，不能只清标志就接着拼。循环DMA与持续DMA请求是不同条件。",
+        "冻结芯片REV_ID并核对ES0182。转换中改序列有专门限制；DMA2的AHB/APB2并发问题也有明确受影响路径，不能笼统宣称所有ADC→SRAM传输都会损坏。配置改变应作为新采集段。"
+      ],
+      "sourceIds": [
+        "manual",
+        "errata"
+      ]
+    },
+    {
+      "label": "06 / BENCH ACCEPTANCE",
+      "title": "待执行的台架验收清单",
+      "paragraphs": [
+        "以下均尚未执行。仅用满足实际ADC输入范围的安全低压信号；封装、引脚、模拟前端未核验，本页不提供直接接线。台架通过前不得把模型测试写成硬件复现。"
+      ],
+      "bullets": [
+        "冻结板卡、芯片REV_ID、固件构建、时钟树、触发源、采样时间、CDR地址及DMA数据宽度。给三个不同输入不同稳定电平，核验每三项的通道次序、NDTR单位及缓冲边界，专门检查手册宽度表述差异。",
+        "经三条独立且已验证的模拟路径注入同源低压波形，不让多个ADC同时采同一个物理ADC通道。比较相位，交换路径区分前端与转换器差异；DMA回调GPIO不代表采样保持边沿。",
+        "观察定时事件与缓冲完成时间，逐步增加受控CPU/DMA负载，记录ADC overrun、DMA错误、丢帧及最坏半缓冲处理时间；验收门限事先来自应用预算。",
+        "在低速安全条件测试停止、重启与错误恢复，确认第一帧重新从ADC1开始且没有旧半帧混入；以不同幅度/频率复验，保留失败记录和原始码，不只保存成功截图。"
+      ]
+    },
+    {
+      "label": "07 / TRANSFER AND CHECK",
+      "title": "迁移的是采集合同，不是某个 HAL 例程名",
+      "paragraphs": [
+        "练习一：仅把一个ADC采样时间改成144周期，最长占用成为156/21 MHz≈7.429 μs；原帧周期能容纳，不代表三路采样窗口仍等价。应重新核验有效时刻和前端建立。",
+        "练习二：缓冲总长只取3N项，N为奇数时，半传输边界能否落在完整三元组后？说明为什么把“总长可被3整除”当成唯一条件还不够。",
+        "许可与证据：本站原创解释、预算和离线数据模型，未执行候选厂商代码、未转载图表。官方资料版权归ST；公开可读不是软件开源许可。三ADC机制成熟不等于本站已完成板卡复现，状态保持待学习。"
+      ]
+    }
+  ]
+});
+window.SensorCaseOverviews["stm32f407-triple-simultaneous-identity"] = {
+  "problem": "三路共享一次触发，内存里却仍可能把通道或帧配错。",
+  "method": "用ADC1主触发建立同时采集，用CDR的mode1逐项顺序建立数据身份，并用合成失样检验帧边界。",
+  "boundary": "限定F407三ADC规则同时模式；手册宽度表述差异明确保留，未本站实物复现，不提供直接接线或可烧录配置。",
+  "takeaway": "采样同时不等于搬运同时；每个数必须知道自己属于哪个ADC、哪一帧和哪套配置。"
+};
