@@ -122,3 +122,12 @@ Run `node case-overviews.test.cjs` alongside all existing suites. No build gener
 - `#case/stm32f407-triple-simultaneous-identity`: RM0090 Rev 22 and ES0182 Rev 19; distinguish simultaneous conversion from the sequential mode 1 DMA stream, incomplete frames and half-buffer boundaries.
 - The documented halfword/32-bit wording discrepancy remains explicit and requires bench verification. No pin mapping, deployable firmware or board reproduction is claimed.
 - Run `node triple-adc.test.cjs` with all existing suites. Eleven pending cases preserve prior content and manual learning state.
+
+## SAR reference burst-load case (verified 2026-10-26)
+
+- `#case/adi-sar-reference-burst`: reference charge replenishment during conversion, distinct from input MUX settling and the existing timer-routing lessons.
+- Primary evidence: ADI AN-931 Rev. 0 (June 2008), AD7686 at 500 kSPS, 22 µF reference capacitance, 8192-sample bursts; Analog Dialogue 47-06 (June 2013); AD7980 Rev. G (January 2021), Tables 2/3 and pp.18/25.
+- Separates the article's approximately 2.5 mA observed peaks (500 Ω measurement setup, not a recommended series resistor) from the AD7980's 330 µA typical average load at 1 MSPS and 5 V.
+- Independent hypothetical charge model: q=330 pC, T=1 µs, R=1 Ω, C=10 µF. First-pulse droop is 33 µV but the sixteenth reaches 276.762 µV and the asymptotic peak 346.775 µV. Raising C to 22 µF reduces the single jump but leaves the 330 µV period-average drop unchanged. This is not a chip, buffer-loop or board simulation.
+- No vendor code or hardware was run; no reference schematic or firmware is asserted production-ready. The previous eleven cases and overviews are retained byte-for-byte, along with unchanged app, models, timing lesson, styles and manually controlled learning state.
+- Run `node reference-burst.test.cjs` and all prior suites. The case-rendering regression includes saved lesson parameters, completed/pending states and motion preference; reading the new route does not complete lessons or migrate storage.
