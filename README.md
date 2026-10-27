@@ -131,3 +131,11 @@ Run `node case-overviews.test.cjs` alongside all existing suites. No build gener
 - Independent hypothetical charge model: q=330 pC, T=1 µs, R=1 Ω, C=10 µF. First-pulse droop is 33 µV but the sixteenth reaches 276.762 µV and the asymptotic peak 346.775 µV. Raising C to 22 µF reduces the single jump but leaves the 330 µV period-average drop unchanged. This is not a chip, buffer-loop or board simulation.
 - No vendor code or hardware was run; no reference schematic or firmware is asserted production-ready. The previous eleven cases and overviews are retained byte-for-byte, along with unchanged app, models, timing lesson, styles and manually controlled learning state.
 - Run `node reference-burst.test.cjs` and all prior suites. The case-rendering regression includes saved lesson parameters, completed/pending states and motion preference; reading the new route does not complete lessons or migrate storage.
+
+## Mixed-rate ADC burst case (verified 2026-10-27)
+
+- `#case/ti-f280015x-burst-sample-age`: F2800157 / C2000Ware 26.02.00.00.LTS, commit 699b8c6aa190cf7430a36bdcf7f5b1ea2e928063. One ADCA burst contains three sequential slots; A0/A1 repeat and A2/A3/A4 rotate.
+- Cross-checks the SysConfig raw field → generated API count → hardware field contract, RR pointer and overflow limits, actual clocks versus comments, acquisition/EOC/result-latch separation, and per-channel sample age.
+- SPRUIY4B (May 2024) and SPRSP68D (November 2025) support timing boundaries. No vendor code, hardware, or build toolchain was executed. Numerical examples are original conditional calculations, not latency measurements.
+- Twelve previous case objects and all lesson/local-state behavior preserved. Only a pinned official TI repository prefix is added to the source regression allowlist; no broad source relaxation.
+- Run `node adc-burst-age.test.cjs` and every existing suite.

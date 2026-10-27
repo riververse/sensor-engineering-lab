@@ -1360,3 +1360,170 @@ window.SensorCaseOverviews["adi-sar-reference-burst"] = {
   "boundary": "厂商AD7686台架与AD7980量级计算分开；单极模型不含逐位电流与振铃，未本站实物复现。",
   "takeaway": "参考不仅要电压准，还要在每次位判决需要时提供稳定的标尺。"
 };
+
+// Original mixed-rate burst case; all twelve prior cases retained unchanged.
+window.SensorCases.push({
+  "id": "ti-f280015x-burst-sample-age",
+  "maker": "TI",
+  "title": "一次触发读三路，为什么五个读数不是同一时刻？",
+  "subtitle": "F2800157 · ADC burst / SOC 轮询 / 快慢通道 / 样本年龄",
+  "question": "两路要频繁更新，另外三路可以慢一些，怎样分配一次触发的三个转换名额？",
+  "summary": "用固定转换槽分配快慢通道，同时给每个值保存自己的采样时间与有效性。",
+  "published": "2026-10-01",
+  "publicationLabel": "所读版本发布",
+  "timingRelated": true,
+  "revision": "C2000Ware 26.02.00.00.LTS · commit 699b8c6aa190cf7430a36bdcf7f5b1ea2e928063；SPRUIY4B / SPRSP68D",
+  "verified": "2026-10-27",
+  "evidence": "厂商成熟外设文档与官方示例 + 本站原创调度算术；没有本站台架结果",
+  "reproduction": "未本站实物复现",
+  "status": "待学习",
+  "lessons": [
+    "adc",
+    "error",
+    "debug"
+  ],
+  "conditions": "版本：官方示例固定到 C2000Ware 26.02.00.00.LTS 的 2026-10-01 提交，并非该方法首次发表。SysConfig 指定 TMS320F2800157、80PN；单 ADCA、12 位单端、ADCCLK 分频 2、SOC7–15、每槽 9 SYSCLK 获取窗口、末转换中断。TRM SPRUIY4B（2024-05）和数据手册 SPRSP68D（2025-11）用于交叉核对。仅阅读源文件，未生成、编译、执行或烧录示例；不能当作直接接线配置。",
+  "sources": [
+    {
+      "id": "example",
+      "label": "TI 官方示例 · 三转换轮询与 ISR",
+      "url": "https://github.com/TexasInstruments/c2000ware-core-sdk/blob/699b8c6aa190cf7430a36bdcf7f5b1ea2e928063/driverlib/f280015x/examples/adc/adc_ex11_burst_mode_epwm.c",
+      "date": "所读源码版本提交 2026-10-01；核验 2026-10-27；不以版权年份推定首发。"
+    },
+    {
+      "id": "syscfg",
+      "label": "同版本 SysConfig · F2800157 / 80PN / SOC7–15",
+      "url": "https://github.com/TexasInstruments/c2000ware-core-sdk/blob/699b8c6aa190cf7430a36bdcf7f5b1ea2e928063/driverlib/f280015x/examples/adc/adc_ex11_burst_mode_epwm.syscfg",
+      "date": "所读源码版本提交 2026-10-01；核验 2026-10-27；不以版权年份推定首发。"
+    },
+    {
+      "id": "driver",
+      "label": "同版本 DriverLib · 参数到寄存器的换算",
+      "url": "https://github.com/TexasInstruments/c2000ware-core-sdk/blob/699b8c6aa190cf7430a36bdcf7f5b1ea2e928063/driverlib/f280015x/driverlib/adc.h",
+      "date": "所读源码版本提交 2026-10-01；核验 2026-10-27；不以版权年份推定首发。"
+    },
+    {
+      "id": "template",
+      "label": "同版本 SysConfig 生成模板 · burstSize + 1",
+      "url": "https://github.com/TexasInstruments/c2000ware-core-sdk/blob/699b8c6aa190cf7430a36bdcf7f5b1ea2e928063/driverlib/.meta/adc/adc.board.c.xdt",
+      "date": "所读源码版本提交 2026-10-01；核验 2026-10-27；不以版权年份推定首发。"
+    },
+    {
+      "id": "clock",
+      "label": "同版本 device.h · 默认时钟条件",
+      "url": "https://github.com/TexasInstruments/c2000ware-core-sdk/blob/699b8c6aa190cf7430a36bdcf7f5b1ea2e928063/device_support/f280015x/common/include/device.h",
+      "date": "所读源码版本提交 2026-10-01；核验 2026-10-27；不以版权年份推定首发。"
+    },
+    {
+      "id": "trm",
+      "label": "TI SPRUIY4B · §§12.5、12.6、12.12 / Table 12-10",
+      "url": "https://www.ti.com/lit/ug/spruiy4b/spruiy4b.pdf",
+      "date": "原始 2023-02；Rev. B 2024-05；核验 2026-10-27。"
+    },
+    {
+      "id": "ds",
+      "label": "TI SPRSP68D · ADC 时序 Tables 6-24、6-25",
+      "url": "https://www.ti.com/lit/ds/symlink/tms320f2800157.pdf",
+      "date": "原始 2023-01；Rev. D 2025-11；核验 2026-10-27。"
+    }
+  ],
+  "blocks": [
+    {
+      "label": "01 / THREE SLOTS, FIVE SIGNALS",
+      "title": "快通道每次读，慢通道轮流读",
+      "paragraphs": [
+        "官方例子的三个 burst 分别使用 SOC7/8/9、SOC10/11/12、SOC13/14/15。前两槽都接 A0/A1，第三槽依次接 A2、A3、A4；结果存在各自 SOC 对应的结果寄存器。这里是单 ADC 顺序三转换，不是三 ADC 同时采样，也不是三个从定时器各自产生错相触发。",
+        "本站解读：SOC 是转换任务槽，不等于一个永久独占的物理通道。重复安排 A0/A1，是用更多转换机会换取更高更新率；不需要每次中断改通道表。慢通道的旧值仍在内存，不代表这次又测了一遍。"
+      ],
+      "sourceIds": [
+        "example",
+        "syscfg"
+      ]
+    },
+    {
+      "label": "02 / CHECK THE THREE LEVELS",
+      "title": "配置里的 2，为什么最终是三次转换？",
+      "paragraphs": [
+        "本版本 SysConfig 的 burstSize=2；已核生成模板将它加 1 传给 DriverLib；ADC_setBurstModeConfig 的参数是转换次数，再减 1 写 BURSTSIZE。因此硬件字段 2 对应三次转换，不能把配置值 2 直接抄成 API 参数 2。9 周期获取窗口传给 ADC_setupSOC 后写成 ACQPS=8。",
+        "触发链是 ePWM1 向上计数命中 CMPA→SOCA→ADCA burst。示例 TBPRD=1999、CMPA=1000、事件分频为 1；SOCPRIORITY 使 SOC0–6 为高优先级、7–15 为轮询。轮询槽的单独 TRIGSEL 被 burst 触发源覆盖；这是 C2000 内部路由，不使用 STM32 ITR/TRGO 表。",
+        "RRPOINTER 指向最近完成的轮询 SOC；示例 ISR 根据 9、12、15 判断哪组完成。它不是累计序号：若中断被长时间阻塞而轮询已绕回，相同指针不能证明中间没有丢帧。高优先级任务插入也会改变实际采样时刻。"
+      ],
+      "sourceIds": [
+        "syscfg",
+        "template",
+        "driver",
+        "trm",
+        "example"
+      ]
+    },
+    {
+      "label": "03 / CLOCKS ARE NOT COMMENTS",
+      "title": "先看真实时钟，再读“50 kHz”注释",
+      "formula": "条件算例：TBCLK = 100 MHz，向上计数 0…1999\nTburst = (1999+1)/100 MHz = 20 μs\nf(A0)=f(A1)=50 kSPS；f(A2)=f(A3)=f(A4)=50/3 ≈ 16.667 kSPS\n每秒总转换数 = 3 × 50,000 = 150,000",
+      "paragraphs": [
+        "50 kHz 只是源码注释在 100 MHz ePWM 时钟下的条件计算。同版本 device.h 的默认 SYSCLK 公式为 120 MHz；不能据注释就认定实际工程是 100 MHz。若实际 TBCLK=120 MHz 且其余参数不变，burst 是 60 kHz、慢通道各 20 kSPS。需核真实时钟树与板卡构建宏。",
+        "CNT/TBCTR 初值影响第一次何时命中；CMPA 决定本周期事件位置；TBPRD 决定稳态周期。它们不能互相替代。本文只分析固定参数，不给动态预装载提交或多模块同步配置；若后续加入同步、影子装载或相位重置，必须重新核验首次帧与稳态时序。"
+      ],
+      "sourceIds": [
+        "example",
+        "clock"
+      ]
+    },
+    {
+      "label": "04 / FINISH BEFORE THE NEXT BURST",
+      "title": "获取、转换、结果锁存是三个预算",
+      "formula": "相对第一槽开始获取，假设无其他 SOC 插入：\nSYSCLK = 100 MHz，ADCCLK = 50 MHz，获取窗口 = 9 周期 = 90 ns\ntEOC=21 周期；tLAT=23 周期（分频 2）\n三槽最后结果锁存 = [2×(9+21)+9+23]/100 MHz = 0.92 μs\n首末获取终点相差 = 2×(9+21)/100 MHz = 0.60 μs",
+      "paragraphs": [
+        "这些是文档参数的独立算术，不含外部触发到第一槽的延迟、ISR、总线等待或竞争，不能当作完整处理延迟。tEOC 是允许下一槽开始的间隔；tLAT 是结果寄存器真正更新的间隔，二者不能混用。每个 burst 必须在下次触发前完成，不能仅拿 150 kSPS 平均速率与 ADC 标称峰值比较。",
+        "9 周期是示例设置，不是任意源阻抗都适用的模拟建立保证。外部模拟开关切换、驱动恢复与采样电容建立要另外预算；没有核验隔离条件，不能擅自假定它们与转换完全重叠。本例由 ISR 读固定结果寄存器，没有 DMA 请求或 DMA 排列可供照搬。"
+      ],
+      "sourceIds": [
+        "trm",
+        "ds",
+        "syscfg"
+      ]
+    },
+    {
+      "label": "05 / THE AGE OF A VALUE",
+      "title": "软件凑齐五个数，不会让它们同时变新",
+      "formula": "合成时间轴：触发在 0、20、40 μs，暂忽略槽内亚微秒偏移\n第三次完成时：A0/A1/A4 来自 40 μs；A3 来自 20 μs；A2 来自 0 μs\nA2/A3/A4 的更新间隔均为 60 μs，而非 20 μs",
+      "paragraphs": [
+        "本站建议的帧合同：每路值携带通道 ID、实际采样时刻或可验证的时刻估计、burst 序号与有效标志。快通道可用于快速闭环，慢通道可用于较慢诊断，但应用要显式接受它们的年龄。三组慢通道全部刷新一次，并不意味着得到五路同一瞬间快照。",
+        "若任务要求五路都不超过 30 μs 的年龄，第三次 burst 后 A2 约 40 μs 已失败，即使所有数组元素都非零。若控制算法将五路当作同步向量，需要改采样方案或建立时间对齐模型；简单复制旧值和插值都不能伪装成新实测。",
+        "故障判定要记录溢出与序号缺口；只清 ADC 中断溢出标志不等于恢复所有历史样本。本文不承诺 ISR 示例在任意业务负载下无丢样。"
+      ]
+    },
+    {
+      "label": "06 / BENCH ACCEPTANCE",
+      "title": "待执行的台架验收清单",
+      "paragraphs": [
+        "以下为本站建议，尚未执行。仅在确认安全隔离的低压台架，按准确芯片封装和板卡原理图核对 ADC 引脚范围与共地；不据本文接线。"
+      ],
+      "bullets": [
+        "冻结芯片/板卡修订、时钟树、SysConfig 与生成文件版本、输入源阻抗、参考、SOC 表；确认获取窗口满足电气要求。",
+        "先用五个可区分的安全 DC 电平验证通道身份，再用已知斜坡观察槽内先后；不要用同电平输入掩盖错位。",
+        "用调试事件与捕获时间测量实际 burst 周期、处理截止时间和样本年龄；加业务负载，统计中断溢出、序号缺口和丢弃帧。",
+        "测试启动、停止再启动及异常恢复。重新确认 RR 指针/槽组与首帧有效边界，验证从未更新过的通道不会被当成有效测量。"
+      ]
+    },
+    {
+      "label": "07 / WHAT TRANSFERS",
+      "title": "带走的是采样资源分配，不是现成固件",
+      "paragraphs": [
+        "练习一：保持总 burst 50 kHz，把每三次触发轮换的慢通道改成四路，其他合同不变。每路慢信号变为 12.5 kSPS，轮询周期 80 μs；请解释为什么增加诊断通道会影响最坏数据年龄。练习二：SYSCLK/TBCLK 都改为 120 MHz，保留寄存器值，独立算出 16.667 μs 触发周期、0.7667 μs 三槽锁存区间与 0.5 μs 首末获取终点差。",
+        "适合快慢混合输入且允许单 ADC 顺序采样的系统；不适合无条件要求三相真正同时的测量。迁移到 GD32/STM32 时不能照抄 SOC 轮询寄存器，而应核它们的扫描序列、定时器触发、转换抢占与 DMA 数据身份。",
+        "证据：官方维护的示例和器件文档证明机制有明确实现，不证明本站运行或量产性能。源码文件头为 BSD-3-Clause 式三条款许可，具体复用须保留相应声明；TI 文档版权单独适用。本站只原创解释与算术、链接原文，不复制厂商图表或执行候选代码；新案例保持待学习。"
+      ],
+      "sourceIds": [
+        "example",
+        "trm"
+      ]
+    }
+  ]
+});
+window.SensorCaseOverviews["ti-f280015x-burst-sample-age"] = {
+  "problem": "想让两路信号每次都更新，另外三路轮流读，却容易把内存里五个数误当成同一帧新测量。",
+  "method": "给单 ADC 的转换槽分配不同重复频率，再用槽组、时间戳和序号管理每一路样本的年龄。",
+  "boundary": "依据固定版本官方示例和手册；只有独立调度算术，没有本站实物复现或直接可用的固件。",
+  "takeaway": "一次触发三次转换，不等于三路同时；五路值都存在，也不等于五路刚刚更新。"
+};
