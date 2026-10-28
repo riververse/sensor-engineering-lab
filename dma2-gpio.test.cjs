@@ -56,6 +56,6 @@ ok(acceptFrame(good,7),'complete aligned frame accepted');
 for(const modify of [r=>r.slice(1),r=>{r[1].adc=1;return r;},r=>{r[2].frame=13;return r;},r=>{r[0].config=6;return r;},r=>{r[1].excitation=2;return r;},r=>{r[2].valid=false;return r;}])ok(!acceptFrame(modify(structuredClone(good)),7),'invalid frame rejected');
 ok(read('app.js').includes('c.timingRelated?'), 'conditional timing navigation');
 ok(read('index.html').includes('十四篇来源核验工程案例'),'metadata case count');
-ok(read('index.html').includes('engineering-cases.js?v=20261028.1'),'data cache version');
+ok(read('index.html').includes('engineering-cases.js?v=20261028.2'),'data cache version');
 ok(read('README.md').includes('#case/st-dma2-gpio-contention'),'new deep link documented');
 console.log(`${checks} DMA2 GPIO source, address, timing and frame-identity checks passed. No firmware or hardware reproduction.`);
