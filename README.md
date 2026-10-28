@@ -139,3 +139,7 @@ Run `node case-overviews.test.cjs` alongside all existing suites. No build gener
 - SPRUIY4B (May 2024) and SPRSP68D (November 2025) support timing boundaries. No vendor code, hardware, or build toolchain was executed. Numerical examples are original conditional calculations, not latency measurements.
 - Twelve previous case objects and all lesson/local-state behavior preserved. Only a pinned official TI repository prefix is added to the source regression allowlist; no broad source relaxation.
 - Run `node adc-burst-age.test.cjs` and every existing suite.
+
+## nRF52840 SAADC buffer deadline case
+
+Adds a source-checked TIMER/PPI/SAADC/EasyDMA case and original three-channel frame/buffer budget. Official tutorial is single-channel; the three-channel schedule is explicitly a teaching model, not a hardware reproduction. Existing 13 cases and local progress are unchanged. Run `node saadc-buffer.test.cjs` plus all existing `*.test.cjs`.

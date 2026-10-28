@@ -1527,3 +1527,139 @@ window.SensorCaseOverviews["ti-f280015x-burst-sample-age"] = {
   "boundary": "依据固定版本官方示例和手册；只有独立调度算术，没有本站实物复现或直接可用的固件。",
   "takeaway": "一次触发三次转换，不等于三路同时；五路值都存在，也不等于五路刚刚更新。"
 };
+
+// Original SAADC buffer-deadline case; all thirteen prior cases retained unchanged.
+window.SensorCases.push({
+  "id": "nordic-saadc-buffer-deadline",
+  "maker": "Nordic",
+  "title": "硬件自动换缓冲，为什么仍会丢掉一整块？",
+  "subtitle": "nRF52840 · TIMER / PPI / SAADC / EasyDMA · 两种截止时间",
+  "question": "定时器触发和缓冲切换都不经过 CPU，是否就不用再管处理任务有多慢？",
+  "summary": "分清采样触发、下一块启动和旧块归还；用三路顺序扫描检验通道顺序与缓冲所有权。",
+  "published": "2026-04-21",
+  "publicationLabel": "所读教程发布",
+  "revision": "Nordic Academy NCS v3.2.0 教程（2026-04-21）；nRF52840 PS v1.8（2023-12-01）；源码参照 7f99e9d（2026-08-11）",
+  "verified": "2026-10-28",
+  "evidence": "厂商教程和产品规格 + 本站原创帧与缓冲期限算术；不是厂商整机性能报告",
+  "reproduction": "未本站实物复现",
+  "status": "待学习",
+  "timingRelated": true,
+  "lessons": [
+    "adc",
+    "debug",
+    "error"
+  ],
+  "conditions": "限定 nRF52840 的 PPI/SAADC/EasyDMA，版本按来源冻结。官方教程演示单通道 AIN0、12 bit、50 μs 周期、两块各8000个int16结果；本文三通道96结果是另行推演，不是官方工程原配置。未编译、执行或烧录候选固件；未核定具体板卡引脚与硅版本勘误，不能直接作为接线或量产配置。",
+  "sources": [
+    {
+      "id": "tutorial",
+      "label": "Nordic Academy · Lesson 6 Exercise 3 · NCS v3.2.0",
+      "url": "https://academy.nordicsemi.com/?nds_version_content=nrf-connect-sdk-intermediate-lesson-6-exercise-3-interfacing-with-adc-using-nrfx-drivers-and-timer-ppi-v3-2-0",
+      "date": "页面标注 2026-04-21；核验2026-10-28，不当作技术首次发明日期。"
+    },
+    {
+      "id": "ps",
+      "label": "nRF52840 PS v1.8 · §§6.23、6.23.4、6.23.5、6.23.10",
+      "url": "https://devzone.nordicsemi.com/cfs-file/__key/communityserver-discussions-components-files/4/nRF52840_5F00_PS_5F00_v1.8.pdf",
+      "date": "封面2023-12-01，4413_417 v1.8；官方社区所载厂商原PDF，非声称最新版；核验2026-10-28。"
+    },
+    {
+      "id": "code",
+      "label": "Nordic Academy 解答源码 · 固定提交 / 文件头许可",
+      "url": "https://github.com/NordicDeveloperAcademy/ncs-inter/blob/7f99e9d5858087e452df443586262727da4c4b04/l6/l6_e3_sol/src/main.c",
+      "date": "该文件版本提交2026-08-11；核验2026-10-28，和v3.2.0教程分开标版本。"
+    }
+  ],
+  "blocks": [
+    {
+      "label": "01 / TWO HARDWARE LINKS",
+      "title": "采样准时，与下一块准时启动，是两条链",
+      "paragraphs": [
+        "教程用 TIMER2 的 COMPARE0 事件触发 SAADC SAMPLE；计数时钟1 MHz，比较点50，COMPARE0→CLEAR短接形成50 μs周期。另一条 PPI 把 SAADC END 接到 START，以免等中断服务才开始下一缓冲。nRF52840 用PPI，不是其他系列的DPPI，也不涉及STM32 ITR/TRGO映射。",
+        "START负责准备结果缓冲，SAMPLE才开始采样；教程在READY后启动定时器。把START当成每个样本的触发，或者在缓冲就绪前放行定时器，都会混淆第一帧。本文不提供运行中修改比较值或预装载配置，改频率应另验首帧与稳态。"
+      ],
+      "sourceIds": [
+        "tutorial",
+        "code"
+      ]
+    },
+    {
+      "label": "02 / SCAN IS NOT SIMULTANEOUS",
+      "title": "一拍三路，是三次顺序转换",
+      "paragraphs": [
+        "PS规定一次SAMPLE遍历已使能通道，按逻辑通道编号从小到大顺序采样；它不是三个同时工作的ADC。RESULT.PTR指向RAM，16 bit结果按通道序列写入。内部采样定时器只支持单通道；三路扫描使用外部TIMER/PPI。",
+        "合成约定：使能逻辑CH1、CH2、CH5，它们拟映射到三路模拟输入，实际映射须另行核验。线性缓冲依次为CH1[0]、CH2[0]、CH5[0]、CH1[1]……。逻辑CH编号不等于AIN引脚编号；具体PSELP及板级引脚尚待配置核验。为本例完整帧交付，选择96个结果=32帧，而不是把官方单路8000结果直接搬来称作三路整帧。"
+      ],
+      "sourceIds": [
+        "ps"
+      ]
+    },
+    {
+      "label": "03 / ONE FRAME BUDGET",
+      "title": "总平均速率够，还要每拍来得及",
+      "formula": "合成预算：T = 50 μs，三路各 tACQ = 10 μs，假设每次 tCONV = 2 μs\n单帧转换预算 = 3 × (10+2) = 36 μs\n相对第一路获取开始，三路获取终点 = 10、22、34 μs\n三路各20 kSPS，总结果速率60 kwords/s；首末采样终点差24 μs",
+      "paragraphs": [
+        "2 μs是本例为便于计算选取的转换预算；PS电气表在典型栏写小于2 μs，不能把此算例当作所有条件下的最大转换保证。还需加触发传播、总线和实测裕量。剩下14 μs不是整个软件处理预算，更不是零抖动承诺。",
+        "PS的10 μs获取时间对应源阻抗不超过100 kΩ的表列条件；外部模拟开关、运放恢复和额外RC仍需独立验算。公式只检查时间表，不证明模拟电压已经准确建立；这里没有模拟开关控制链。"
+      ],
+      "sourceIds": [
+        "ps"
+      ]
+    },
+    {
+      "label": "04 / DOUBLE BUFFER IS NOT INFINITE",
+      "title": "PPI避免切换等待，不会替CPU处理旧块",
+      "formula": "合成双缓冲：每块96个16 bit结果，三路每帧 → 32帧/块\n块间隔 = 32 × 50 μs = 1600 μs；双缓冲RAM = 2 × 96 × 2 = 384字节\n只用两块且不复制：旧块处理+排队+归还 必须 < 1600 μs − 安全裕量",
+      "paragraphs": [
+        "RESULT.PTR在START时锁存，STARTED后才可准备下一地址；END或STOPPED表示EasyDMA不再访问刚结束的缓冲，可读AMOUNT核实际数量。BUF_REQ表示需要提供后续缓冲，DONE表示已有一块结果完成，两个事件不能混当“这块随便覆盖”。",
+        "原创所有权合同：FREE→DMA_ACTIVE→READY→PROCESSING→FREE。只有FREE块能再次交给DMA。若处理耗时1.8 ms而下一块1.6 ms就满，两块方案已经不够；提前把仍在读取的A块重新排队，会让分析端看到新旧数据混合。硬件切换速度再快也不能补救该竞争。",
+        "可增加受控队列、复制后再处理或降低数据率，但必须显式规定队列满时停采/丢块策略和序号。本文不推断驱动缺缓冲时自动保证无损；不应假设DONE回调的到达时刻就是首样本采样时刻。"
+      ],
+      "sourceIds": [
+        "ps",
+        "tutorial"
+      ]
+    },
+    {
+      "label": "05 / A FRAME NEEDS AN IDENTITY",
+      "title": "缓冲长度正确，不等于样本时间正确",
+      "paragraphs": [
+        "每块建议携带首帧序号、使能通道表、有效结果数、触发周期和配置版本；只在可验证的无丢触发前提下，由首帧时刻推算后续时刻。一次忙时触发、停止恢复或参数改变都会破坏“数组索引=绝对时间”的假设。",
+        "合成检查：96个结果可拆32完整三路帧；95个结果只含31完整帧加2个值，不能强行补零为32个有效帧。消费端遇不完整帧应隔离/标缺测。把两块样本直接连起来做FFT，还要验证边界没有间隙，不是只检查数组长度。"
+      ]
+    },
+    {
+      "label": "06 / BENCH ACCEPTANCE",
+      "title": "待执行的台架验收清单",
+      "paragraphs": [
+        "以下为本站建议，尚未执行。仅在安全隔离低压台架，先核板卡原理图、输入范围、供电及共地；本文不是接线指南。"
+      ],
+      "bullets": [
+        "记录nRF52840具体封装/硅版本、PS与勘误、SDK/nrfx版本、TIMER/PPI资源占用和输入源阻抗，复核实际事件地址。",
+        "先用三路不同安全DC电平验证逻辑通道顺序，再用斜坡验证顺序采样的时间偏移；不要用三个相同电平掩盖错位。",
+        "注入处理延迟和业务中断负载，统计块序号、AMOUNT、队列深度及丢块；验证PROCESSING块绝不被重新交给DMA。",
+        "测试首次启动、停采重启、缺缓冲和改采样率后的首块有效边界；对比跨块连续信号而不是只看平均值。"
+      ]
+    },
+    {
+      "label": "07 / WHAT TRANSFERS",
+      "title": "迁移所有权模型，不照搬外设名",
+      "paragraphs": [
+        "练习：块长改为192个结果，三路50 μs周期不变。答案为64帧、3.2 ms块间隔、双块768字节；处理期限变宽，但首次整块交付也更晚。若只增通道数而不增块长，则可用帧数和块时间反而缩短。",
+        "适合低中速扫描、连续波形或批量传感采集。需要真正同时采样时应另选硬件；迁移到GD32/STM32要重新核DMA双缓冲/循环模式及触发路由，不能把PPI概念直接写成现成寄存器配置。",
+        "成熟度证据是厂商产品规格与公开教学实现，而非本站实物复现。教程及PS有各自版权；所读源码文件头是LicenseRef-Nordic-5-Clause，不是MIT或Apache通用许可，复用需阅读其条款。本页不复制厂商图表或代码，不执行候选工程；仅原创解释和模型，新案例保持待学习。"
+      ],
+      "sourceIds": [
+        "tutorial",
+        "ps",
+        "code"
+      ]
+    }
+  ]
+});
+window.SensorCaseOverviews["nordic-saadc-buffer-deadline"] = {
+  "problem": "自动触发和自动换缓冲都正常，分析端却可能读到被DMA覆盖的旧块，三路值也容易被误当同时采样。",
+  "method": "把TIMER→SAMPLE和END→START分开验收，再用明确的缓冲所有权、通道顺序与块期限管理交付。",
+  "boundary": "nRF52840厂商文档与教程机制；三路96结果为原创推演，未做实物复现，不是可直接烧录配置。",
+  "takeaway": "硬件准时不等于软件无限慢；块号、样本数与所有权一起决定数据是否可信。"
+};

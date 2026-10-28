@@ -11,24 +11,24 @@ const dataCtx={window:{}};vm.createContext(dataCtx);vm.runInContext(read('engine
 const cases=JSON.parse(JSON.stringify(dataCtx.window.SensorCases));
 const lessons=['driver','adc','reference','error','calibration','debug'];
 const routes=['home','path','sources','cases','timing',...lessons.map(id=>'lesson/'+id),...cases.map(c=>'case/'+c.id),'case/missing','unrecognized'];
-equal(cases.map(c=>c.id),['ti-tipd120','adi-cn0359','st-an4073','st-adc-overrun','ti-ads1256-mux','st-dma2-gpio-contention','st-m7-adc-cache','st-center-aligned-trigger','adi-mux-order-memory','ti-ads131m04-time-identity','stm32f407-triple-simultaneous-identity','adi-sar-reference-burst','ti-f280015x-burst-sample-age'],'stable case deep links');
+equal(cases.map(c=>c.id),['ti-tipd120','adi-cn0359','st-an4073','st-adc-overrun','ti-ads1256-mux','st-dma2-gpio-contention','st-m7-adc-cache','st-center-aligned-trigger','adi-mux-order-memory','ti-ads131m04-time-identity','stm32f407-triple-simultaneous-identity','adi-sar-reference-burst','ti-f280015x-burst-sample-age','nordic-saadc-buffer-deadline'],'stable case deep links');
 for(const c of cases){
- equal(c.status,'待学习',c.id+' pending');equal(c.reproduction,'未本站实物复现',c.id+' reproduction boundary');equal(c.verified,c.id==='ti-f280015x-burst-sample-age'?'2026-10-27':c.id==='adi-sar-reference-burst'?'2026-10-26':c.id==='stm32f407-triple-simultaneous-identity'?'2026-10-25':c.id==='ti-ads131m04-time-identity'?'2026-10-24':c.id==='adi-mux-order-memory'?'2026-10-23':c.id==='st-center-aligned-trigger'?'2026-10-22':c.id==='st-m7-adc-cache'?'2026-10-21':c.id==='st-dma2-gpio-contention'?'2026-10-20':c.id==='ti-ads1256-mux'?'2026-10-19':c.id==='st-adc-overrun'?'2026-10-18':'2026-10-17',c.id+' verification date');
+ equal(c.status,'待学习',c.id+' pending');equal(c.reproduction,'未本站实物复现',c.id+' reproduction boundary');equal(c.verified,c.id==='nordic-saadc-buffer-deadline'?'2026-10-28':c.id==='ti-f280015x-burst-sample-age'?'2026-10-27':c.id==='adi-sar-reference-burst'?'2026-10-26':c.id==='stm32f407-triple-simultaneous-identity'?'2026-10-25':c.id==='ti-ads131m04-time-identity'?'2026-10-24':c.id==='adi-mux-order-memory'?'2026-10-23':c.id==='st-center-aligned-trigger'?'2026-10-22':c.id==='st-m7-adc-cache'?'2026-10-21':c.id==='st-dma2-gpio-contention'?'2026-10-20':c.id==='ti-ads1256-mux'?'2026-10-19':c.id==='st-adc-overrun'?'2026-10-18':'2026-10-17',c.id+' verification date');
  ok(/^\d{4}-\d{2}(-\d{2})?$/.test(c.published),c.id+' original publication date');
  ok(c.revision.length>15&&c.conditions.includes('版本'),c.id+' version/conditions');
  ok(c.evidence.includes('厂商')&&c.sources.length>0,c.id+' evidence category');
- ok(c.blocks.length===(['ti-ads1256-mux','st-dma2-gpio-contention','st-m7-adc-cache','st-center-aligned-trigger','adi-mux-order-memory','ti-ads131m04-time-identity','stm32f407-triple-simultaneous-identity','adi-sar-reference-burst','ti-f280015x-burst-sample-age'].includes(c.id)?7:c.id==='st-adc-overrun'?6:5),c.id+' full case structure');
+ ok(c.blocks.length===(['ti-ads1256-mux','st-dma2-gpio-contention','st-m7-adc-cache','st-center-aligned-trigger','adi-mux-order-memory','ti-ads131m04-time-identity','stm32f407-triple-simultaneous-identity','adi-sar-reference-burst','ti-f280015x-burst-sample-age','nordic-saadc-buffer-deadline'].includes(c.id)?7:c.id==='st-adc-overrun'?6:5),c.id+' full case structure');
  ok(c.blocks.some(b=>b.bullets?.length===4),c.id+' actionable unexecuted checklist');
  ok(c.blocks.some(b=>b.formula),c.id+' explicit calculation');
  ok(c.lessons.every(id=>lessons.includes(id)),c.id+' valid lesson references');
  equal(new Set(c.sources.map(s=>s.id)).size,c.sources.length,c.id+' unique source IDs');
- for(const source of c.sources){const url=new URL(source.url);ok(url.protocol==='https:'&&(['www.ti.com','www.st.com','www.analog.com','community.st.com','community.arm.com','arm-software.github.io'].includes(url.hostname)||(url.hostname==='github.com'&&(url.pathname.startsWith('/STMicroelectronics/stm32f4xx-hal-driver/blob/1f6451c3e07728b4c830744de380e56bf5bc0026/')||url.pathname.startsWith('/TexasInstruments/c2000ware-core-sdk/blob/699b8c6aa190cf7430a36bdcf7f5b1ea2e928063/')))),c.id+' official HTTPS source');ok(source.date.length>10,c.id+' source date available or explicitly unavailable');}
+ for(const source of c.sources){const url=new URL(source.url);ok(url.protocol==='https:'&&((url.hostname==='academy.nordicsemi.com'&&url.searchParams.get('nds_version_content')==='nrf-connect-sdk-intermediate-lesson-6-exercise-3-interfacing-with-adc-using-nrfx-drivers-and-timer-ppi-v3-2-0')||(url.hostname==='devzone.nordicsemi.com'&&url.pathname==='/cfs-file/__key/communityserver-discussions-components-files/4/nRF52840_5F00_PS_5F00_v1.8.pdf')||['www.ti.com','www.st.com','www.analog.com','community.st.com','community.arm.com','arm-software.github.io'].includes(url.hostname)||(url.hostname==='github.com'&&(url.pathname.startsWith('/STMicroelectronics/stm32f4xx-hal-driver/blob/1f6451c3e07728b4c830744de380e56bf5bc0026/')||url.pathname.startsWith('/NordicDeveloperAcademy/ncs-inter/blob/7f99e9d5858087e452df443586262727da4c4b04/')||url.pathname.startsWith('/TexasInstruments/c2000ware-core-sdk/blob/699b8c6aa190cf7430a36bdcf7f5b1ea2e928063/')))),c.id+' official HTTPS source');ok(source.date.length>10,c.id+' source date available or explicitly unavailable');}
  for(const b of c.blocks)for(const id of b.sourceIds||[])ok(c.sources.some(s=>s.id===id),c.id+' resolved claim citation');
  ok(c.blocks.find(b=>b.title==='待执行的台架验收清单').paragraphs.join('').includes('尚未执行'),c.id+' bench plan is unexecuted');
 }
 ok(index.indexOf('engineering-cases.js')>index.indexOf('content.js')&&index.indexOf('engineering-cases.js')<index.indexOf('app.js'),'data loads before renderer');
 ok(index.includes('data-nav="cases"'),'top navigation includes cases');
-ok(index.includes('20261027.1'),'cache bust');
+ok(index.includes('20261028.1'),'cache bust');
 ok(css.includes('.paused .hero-sweep,.paused .hero-sample{animation-play-state:paused}'),'animation pause rule preserved');
 ok(app.includes("const KEY='sensor-engineering-lab:v1'"),'local progress storage namespace preserved');
 ok(app.includes("Math.abs(n)<0.5*10**(-d)?0:Number(n)"),'zero display normalization preserved');
@@ -64,9 +64,9 @@ for(const route of routes){
  equal(r.writes[0][1].params.adc,saved.params.adc,route+' saved ADC parameters unchanged');
  equal(r.writes[0][1].motion,false,route+' paused preference unchanged');
  equal(Object.keys(r.writes[0][1].done).sort(),lessons.slice().sort(),route+' no implicit new case completion');
- if(route==='cases')equal((html.match(/aria-label="问题与方法速览"/g)||[]).length,13,'all thirteen cards explain problem and method');
+ if(route==='cases')equal((html.match(/aria-label="问题与方法速览"/g)||[]).length,14,'all fourteen cards explain problem and method');
  if(route.startsWith('case/')&&route!=='case/missing'){
-   ok(html.includes(route==='case/ti-f280015x-burst-sample-age'?'所读版本发布':'原始发布'),route+' honest publication metadata');
+   ok(html.includes(route==='case/nordic-saadc-buffer-deadline'?'所读教程发布':route==='case/ti-f280015x-burst-sample-age'?'所读版本发布':'原始发布'),route+' honest publication metadata');
    const intro=dataCtx.window.SensorCaseOverviews[route.slice(5)];
    for(const field of ['problem','method','boundary','takeaway'])ok(html.includes(intro[field]),route+' overview '+field);
    ok(html.indexOf('先看懂大意')<html.indexOf('硬件与软件条件'),route+' introduction comes before technical setup');
