@@ -143,3 +143,10 @@ Run `node case-overviews.test.cjs` alongside all existing suites. No build gener
 ## nRF52840 SAADC buffer deadline case
 
 Adds a source-checked TIMER/PPI/SAADC/EasyDMA case and original three-channel frame/buffer budget. Official tutorial is single-channel; the three-channel schedule is explicitly a teaching model, not a hardware reproduction. Existing 13 cases and local progress are unchanged. Run `node saadc-buffer.test.cjs` plus all existing `*.test.cjs`.
+
+## Multi-ADC reconfiguration and synchronization case (verified 2026-10-29)
+
+- `#case/adi-ade-reconfiguration-sync`: ADI AN-2625 with ADEMA124/127 Rev. A and ADE91xx Rev. A. Configuration can pause conversion despite a shared clock; post-configuration alignment, snapshot verification, filter settling and application epoch identity are separate acceptance gates.
+- Original conditional SPI arithmetic and failure-path tests are not a hardware reproduction, complete driver, or mains measurement procedure. No candidate software was executed.
+- All fourteen existing case objects and overviews, six lessons, styles, timing workbench and manually controlled local progress are retained. No generator is used.
+- Run `node ade-sync.test.cjs` and every existing `*.test.cjs`.

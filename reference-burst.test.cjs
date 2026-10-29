@@ -27,7 +27,7 @@ for(const invalid of [{r:0},{c:-1},{t:NaN},{q:Infinity},{n:1.5}]){assert.throws(
 const source=fs.readFileSync(__dirname+'/engineering-cases.js','utf8'),marker='\n// Original reference-drive case; prior case bytes retained unchanged.';
 assert.equal(crypto.createHash('sha256').update(source.slice(0,source.indexOf(marker))).digest('hex'),'64e21f9d3a28fe50c4059053b95b89308236a41a343bce3d547a34046ee63256');checks++;
 const ctx={window:{}};vm.runInNewContext(source,ctx);const c=ctx.window.SensorCases.find(c=>c.id==='adi-sar-reference-burst');
-assert.equal(ctx.window.SensorCases.length,14);checks++;assert.equal(c.verified,'2026-10-26');checks++;
+assert.equal(ctx.window.SensorCases.length,15);checks++;assert.equal(c.verified,'2026-10-26');checks++;
 const text=JSON.stringify(c);for(const s of ['AD7686','AD7980','Rev. G','8192','500 Ω','不是AD7980内部模型','330 μA','2.5 mA','0.1156 Ω','276.762','337.557','尚未执行','未本站实物复现','软件开源授权'])ok(text.includes(s),s);
 ok(c.blocks.length===7&&c.sources.length===3,'complete evidence structure');
 console.log(`${checks} reference-burst arithmetic, boundary and byte-for-byte legacy checks passed. Offline model only.`);
