@@ -64,7 +64,7 @@ for(const route of routes){
  equal(r.writes[0][1].params.adc,saved.params.adc,route+' saved ADC parameters unchanged');
  equal(r.writes[0][1].motion,false,route+' paused preference unchanged');
  equal(Object.keys(r.writes[0][1].done).sort(),lessons.slice().sort(),route+' no implicit new case completion');
- if(route==='cases')equal((html.match(/aria-label="问题与方法速览"/g)||[]).length,cases.length,'every case card explains problem and method');
+ if(route==='cases'){equal((html.match(/aria-label="问题与方法速览"/g)||[]).length,cases.length,'every case card explains problem and method');ok(html.includes('TI、ADI、ST、Nordic、Bosch Sensortec'),'coverage summary includes every represented manufacturer');}
  if(route.startsWith('case/')&&route!=='case/missing'){
    ok(html.includes(route==='case/nordic-saadc-buffer-deadline'?'所读教程发布':route==='case/ti-f280015x-burst-sample-age'?'所读版本发布':'原始发布'),route+' honest publication metadata');
    const intro=dataCtx.window.SensorCaseOverviews[route.slice(5)];
