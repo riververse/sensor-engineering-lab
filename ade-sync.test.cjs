@@ -58,8 +58,8 @@ function snapshotPass(counts){return counts.length===4&&counts.every(Number.isIn
 ok(snapshotPass([1000,1001,1000,1001]));ok(!snapshotPass([999,1001,1000,1000]));ok(!snapshotPass([1000,1000,1000]));
 const source=fs.readFileSync(__dirname+'/engineering-cases.js','utf8'),marker='\n// Original reconfiguration/synchronization case; all fourteen prior cases retained unchanged.\n';
 ok(source.includes(marker));eq(crypto.createHash('sha256').update(source.slice(0,source.indexOf(marker))).digest('hex'),'9abef26361f0b149b95543c617baea007ed6084256a855e9f8fa33ae53299844');
-const ctx={window:{}};vm.runInNewContext(source,ctx);const cases=JSON.parse(JSON.stringify(ctx.window.SensorCases)),c=cases.at(-1);
-eq(c.id,'adi-ade-reconfiguration-sync');eq(cases.length,15);eq(new Set(cases.map(c=>c.id)).size,15);eq(c.status,'待学习');eq(c.reproduction,'未本站实物复现');eq(c.verified,'2026-10-29');eq(c.sources.length,3);eq(c.blocks.length,7);eq(c.blocks.find(b=>b.title==='待执行的台架验收清单').bullets.length,4);
+const ctx={window:{}};vm.runInNewContext(source,ctx);const cases=JSON.parse(JSON.stringify(ctx.window.SensorCases)),c=cases.find(c=>c.id==='adi-ade-reconfiguration-sync');
+eq(c.id,'adi-ade-reconfiguration-sync');ok(cases.length>=15,'all previously published cases retained');eq(new Set(cases.map(c=>c.id)).size,cases.length);eq(c.status,'待学习');eq(c.reproduction,'未本站实物复现');eq(c.verified,'2026-10-29');eq(c.sources.length,3);eq(c.blocks.length,7);eq(c.blocks.find(b=>b.title==='待执行的台架验收清单').bullets.length,4);
 const text=JSON.stringify(c);for(const token of ['DATAPATH_CONFIG_LOCK','DREADY','SNAPSHOT','config_epoch','sync_epoch','49.82','75.18','129.82','24.22','7.03','375 μs','约 40 μs','3 个 DREADY','尚未执行','未编译、执行或烧录','不是总恢复延迟','不等于滤波器已经建立','没有本站或独立第三方实物复现','必须能归属到正在配置的 ADEMA','不能拿链末端另一颗 ADE9113'])ok(text.includes(token),token);
 for(const source of c.sources){const u=new URL(source.url);eq(u.hostname,'www.analog.com');eq(u.protocol,'https:');}
 for(const b of c.blocks)for(const id of b.sourceIds||[])ok(c.sources.some(s=>s.id===id));

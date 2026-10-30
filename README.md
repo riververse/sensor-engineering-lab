@@ -150,3 +150,11 @@ Adds a source-checked TIMER/PPI/SAADC/EasyDMA case and original three-channel fr
 - Original conditional SPI arithmetic and failure-path tests are not a hardware reproduction, complete driver, or mains measurement procedure. No candidate software was executed.
 - All fourteen existing case objects and overviews, six lessons, styles, timing workbench and manually controlled local progress are retained. No generator is used.
 - Run `node ade-sync.test.cjs` and every existing `*.test.cjs`.
+
+## BMI270 FIFO transaction-boundary case (verified 2026-10-30)
+
+- `#case/bosch-bmi270-fifo-transaction`: complete-frame dequeue, partial-frame replay across bus transactions, and readout-time versus sampling-time evidence.
+- Uses Bosch BMI270 Rev. 1.6 (March 2026) and the official product page. Standard 2048-byte FIFO only; no MaxFIFO configuration. The wearable-oriented part is not presented as industrial-qualified.
+- Original A/B/C examples distinguish a 20-byte transaction followed by a 26-byte transaction from DMA chunks within one continuous burst. Capacity and clock-wrap arithmetic are conditional teaching calculations, not measured throughput or a timestamp implementation.
+- No candidate firmware, vendor driver or hardware was executed. All fifteen prior case objects and overviews, six lessons, styling, timing workbench and manual local progress remain unchanged. No generator is used.
+- Run `node bmi270-fifo.test.cjs` and every existing `*.test.cjs`.
