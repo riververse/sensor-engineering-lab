@@ -158,3 +158,11 @@ Adds a source-checked TIMER/PPI/SAADC/EasyDMA case and original three-channel fr
 - Original A/B/C examples distinguish a 20-byte transaction followed by a 26-byte transaction from DMA chunks within one continuous burst. Capacity and clock-wrap arithmetic are conditional teaching calculations, not measured throughput or a timestamp implementation.
 - No candidate firmware, vendor driver or hardware was executed. All fifteen prior case objects and overviews, six lessons, styling, timing workbench and manual local progress remain unchanged. No generator is used.
 - Run `node bmi270-fifo.test.cjs` and every existing `*.test.cjs`.
+
+## ADS1262 chop-overlap case (verified 2026-10-31)
+
+- `#case/ti-ads1262-chop-overlap`: global input chop reuses one internal conversion between adjacent outputs. This differs from the earlier RTD IDAC exchange and ADS1256 channel-scan examples.
+- Source: TI SBAS661C (May 2021), pp.62–64, 73, 84, 91. ADC1 continuous chop-only, no IDAC rotation; the 400 SPS / sinc3 example separates 15.848 ms first latency from roughly 126.199 SPS subsequent updates.
+- Original restricted algebra derives a two-contributor dynamic response and adjacent covariance under independent equal-variance internal noise. Four overlapping outputs have mean variance 7/32 of internal variance, not the independent-output estimate 1/8. These are not measured ADS1262 noise statistics or a filter/timestamp implementation.
+- All sixteen prior case objects and overviews, lessons, design and manually controlled local progress remain unchanged. No candidate firmware or hardware was run.
+- Run `node ads1262-chop.test.cjs` and all existing `*.test.cjs`.
