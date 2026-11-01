@@ -166,3 +166,11 @@ Adds a source-checked TIMER/PPI/SAADC/EasyDMA case and original three-channel fr
 - Original restricted algebra derives a two-contributor dynamic response and adjacent covariance under independent equal-variance internal noise. Four overlapping outputs have mean variance 7/32 of internal variance, not the independent-output estimate 1/8. These are not measured ADS1262 noise statistics or a filter/timestamp implementation.
 - All sixteen prior case objects and overviews, lessons, design and manually controlled local progress remain unchanged. No candidate firmware or hardware was run.
 - Run `node ads1262-chop.test.cjs` and all existing `*.test.cjs`.
+
+## STM32L476 oversampling interruption case (verified 2026-11-01)
+
+- `#case/st-l476-oversampling-interrupt`: single-ADC regular hardware oversampling, JOVSE=0 and TROVS=0; continued preserves valid contributions across injection, resumed clears and can starve.
+- Primary sources: RM0351 Rev. 11 (April 2026), AN4629 Rev. 1 (June 2015), ES0250 Rev. 13 (May 2025). The mode table restriction overrides an overbroad reading of Figure 114's TROVS=X label. The idle-after-1-ms erratum is not claimed fixed by averaging.
+- Original completed-event model separates accumulation, synthetic age and liveness. Its slot ordering is explicitly not a silicon arbitration or sampling-aperture simulation. No deployable mapping, hardware measurement or candidate-code execution.
+- All seventeen prior case objects and overviews, lessons, styles, timing workbench and manually controlled learning state remain unchanged. No generator is used.
+- Run `node l476-oversampling.test.cjs` and every existing `*.test.cjs`.

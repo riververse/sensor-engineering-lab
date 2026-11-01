@@ -2047,3 +2047,138 @@ window.SensorCaseOverviews["ti-ads1262-chop-overlap"] = {
   "boundary": "依据厂商手册与原创离散模型，未做板卡实验；相关系数是条件化推导，不是器件实测或完整滤波仿真。",
   "takeaway": "新读数不等于独立信息；偏置被抵消，也不等于变化中的输入被无延迟地测到。"
 };
+
+// Original oversampling-interruption case; all seventeen prior cases retained unchanged.
+window.SensorCases.push({
+  "id": "st-l476-oversampling-interrupt",
+  "maker": "ST",
+  "title": "平均攒够了四次，为什么还不能当作一段连续采样？",
+  "subtitle": "STM32L476 · 硬件过采样 / 注入抢占 / 样本年龄与饥饿",
+  "question": "更高优先级的注入转换打断平均时，应该保留旧贡献，还是全部重来？",
+  "summary": "从累加器的保留与清零规则，分清输出能否完成、贡献是否连续，以及结果还有多旧。",
+  "published": "2015-06",
+  "revision": "AN4629 Rev. 1；RM0351 Rev. 11（2026-04）；ES0250 Rev. 13（2025-05）",
+  "verified": "2026-11-01",
+  "evidence": "厂商手册、应用笔记与勘误 + 本站原创完成事件模型；非芯片时序或噪声实测",
+  "reproduction": "未本站实物复现",
+  "status": "待学习",
+  "lessons": [
+    "adc",
+    "error",
+    "debug"
+  ],
+  "conditions": "限定 STM32L476 单 ADC、单 regular 通道硬件过采样，ROVSE=1、JOVSE=0、TROVS=0，比较 ROVSM=0/1；预置注入序列，不使用 auto-injected、dual ADC、动态 JSQR 或中途 JADSTP。文档版本按实际 PDF 封面及修订历史，不把网页索引更新时间当修订日。没有指定板卡、引脚、触发源、ADC 时钟或 DMA 映射；以下模式字段不是完整可烧录配置。",
+  "sources": [
+    {
+      "id": "rm",
+      "label": "ST RM0351 Rev. 11：§18.4.30，pp.556–561；ADC_CFGR2 pp.594–595",
+      "url": "https://www.st.com/resource/en/reference_manual/rm0351-stm32l47xxx-stm32l48xxx-stm32l49xxx-and-stm32l4axxx-advanced-armbased-32bit-mcus-stmicroelectronics.pdf",
+      "date": "首版 2015-05-28；本版 2026-04-02（封面 April 2026）；核验 2026-11-01。"
+    },
+    {
+      "id": "an",
+      "label": "ST AN4629 Rev. 1：ADC hardware oversampling for microcontrollers of the STM32 L0 and L4 series",
+      "url": "https://www.st.com/resource/en/application_note/dm00150423.pdf",
+      "date": "June 2015，DocID027261 Rev. 1；核验 2026-11-01。"
+    },
+    {
+      "id": "errata",
+      "label": "ST ES0250 Rev. 13：器件修订表；§2.8.11，p.28",
+      "url": "https://www.st.com/resource/en/errata_sheet/es0250-stm32l471xx475xx476xx486xx-device-errata-stmicroelectronics.pdf",
+      "date": "本版 2025-05-26（封面 May 2025）；核验 2026-11-01。"
+    }
+  ],
+  "blocks": [
+    {
+      "label": "01 / ONE OUTPUT IS A GROUP",
+      "title": "先分清“一次触发”和“一份输出”",
+      "formula": "本例 N=4，等权算术平均 y=(x₁+x₂+x₃+x₄)/4\nTROVS=0：一次 regular 触发启动整组连续子转换（仍可被 injected 打断）\nTROVS=1：每个子转换分别等待触发；不是本例 continued 模式",
+      "paragraphs": [
+        "STM32L476 的硬件过采样把多次转换先累加、再移位交给输出寄存器。它不是 CPU 收到四次普通结果后才做平均，也不能直接照搬本站 STM32F407 软件平均的回调计数。AN4629 给出硬件思路，具体抢占规则以本器件 RM0351 为准。",
+        "本例用 4 次、右移 2 位解释等权平均；字段名以 ADC_CFGR2 的 OVSR、OVSS 定义为准，不能照抄 p.556 叙述中的 OVFS 拼写。没有由此承诺多出多少有效位、改善多少绝对精度；输入噪声、相关性、建立时间和数据格式仍是独立条件。",
+        "p.558 图 113 区分整组触发和逐子转换触发。触发是请求，子转换是贡献，输出是组的交付，三者不能共用一个计数器来证明采样正确。正文后面的时间单位是原创教学时隙，不是该器件的 ADC 周期或吞吐规格。"
+      ],
+      "sourceIds": [
+        "rm",
+        "an"
+      ]
+    },
+    {
+      "label": "02 / KEEP OR RESTART",
+      "title": "continued 保留贡献；resumed 放弃旧累积",
+      "formula": "ROVSE=1、JOVSE=0、TROVS=0：\nROVSM=0 / continued：保留注入前已完成且有效的子转换\nROVSM=1 / resumed：清空旧累积，注入结束后从第 1 次重新凑满 N 次",
+      "paragraphs": [
+        "手册 p.559 的 continued 不是保留正在被中止的半次转换，而是从最后有效的贡献继续。只要注入之间仍能完成 regular 子转换，组可以跨多个空隙积累完成；但“最终攒够”并不保证四次来自同一段连续时间。",
+        "resumed 让最终一组来自注入之间的连续转换段，代价是前面已花时间获得的贡献会被丢掉。如果每个空隙都不够完成整组，它可以一直无法交付 regular 结果；注入路径仍在工作，并不表示 regular 路径有进展。",
+        "组合限制不能只看一幅图：图 114 标注 TROVS=X，但 p.560 的说明和 p.561 表 119 明确，TROVS=1 与注入共用时强制 resumed，JOVSE 必须为 0，ROVSM=0/TROVS=1 列为不支持。因此本文固定 TROVS=0；也不把两个组都开过采样时的规则混进来。"
+      ],
+      "sourceIds": [
+        "rm"
+      ]
+    },
+    {
+      "label": "03 / COUNT THE AGES",
+      "title": "四个数一样多，覆盖的历史却不一样",
+      "formula": "原创时隙模型：regular 完成时刻 1、2；注入占用 (2,5]；随后完成 6、7、8、9\ncontinued 首组：[1,2,6,7]，在 7 交付，完成时刻代理均值=4，跨度=6\nresumed 首组：[6,7,8,9]，在 9 交付，完成时刻代理均值=7.5，跨度=3\n合成 x(t)=100+4t：continued=116，resumed=130；各自最新贡献为 128、136",
+      "paragraphs": [
+        "模型只接收已经完成的 regular 事件和一次清零 / 保留事件；每个 regular 占 1 个时隙，注入占 3 个时隙。规定 t=2 的完成先入账，再处理注入。这是自定义事件顺序，不是对芯片同时到达边沿、抢占延迟或转换孔径的断言；未完成的尝试不入账。",
+        "用完成时刻作为人为输入 x(t) 的索引，continued 输出比它最后一份贡献小 12 个合成码值，resumed 小 6 个。相应的完成时刻代理年龄是 7−4=3 与 9−7.5=1.5 个时隙。这些只是线性教学信号上的平均关系，不是实际 ADC 的采样时间戳、群延迟或电压误差规格。",
+        "两种结果交付时刻不同，不能只看 116 与 130 谁更接近某个固定数就评判精度。continued 更早凑齐，却含注入前的历史；resumed 更晚交付，但本组连续。控制或诊断任务要先决定最大允许年龄、连续性与期限，再选策略，而不是只要求“每组四次”。"
+      ]
+    },
+    {
+      "label": "04 / LIVENESS IS A SEPARATE CONTRACT",
+      "title": "不允许混合历史，也可能意味着一直没有新结果",
+      "formula": "重复模式：R、R、I、I、I（R 为完成的 regular，I 为注入占用时隙）\n每个空隙只有 2 个有效 R，小于 N=4\ncontinued：第二个空隙可交付首组；resumed：每次只攒到 2 就清零\n若该模式无限持续，resumed 永远无首组；有限测试只能证明观察区间内无输出",
+      "paragraphs": [
+        "这里仍采用先完成、后注入的明确模型顺序，不预测硬件恰好同沿时谁先执行。离线测试把这个模式重复若干次，检查 continued 的贡献既不丢失也不重复，resumed 则没有输出；随后留出 4 个连续 regular 完成事件，检查 resumed 能恢复交付，不残留旧贡献。",
+        "手册所说的注入周期必须足够大，不能简化为只拿两个触发沿相减：注入序列自身占用时间、被中止的尝试及实际 ADC 条件都会吃掉可用空隙。反过来，continued 的“至少能完成一个子转换”也不是有限最坏延迟保证；如果空隙间等待没有上界，输出年龄就没有统一上界。",
+        "应用应另设 regular 结果期限和配置代际：超期时标记无新有效结果，不把上一次寄存器值重新盖上当前主机时间。记录触发、交付与接收时刻的不同含义；中断次数、DMA 回调或注入 JEOC 都不能替 regular 完成与新鲜度作证。本页没有实现这些外设或恢复驱动。"
+      ],
+      "sourceIds": [
+        "rm"
+      ]
+    },
+    {
+      "label": "05 / ERRATA ARE NOT AVERAGED AWAY",
+      "title": "累加器规则正确，不等于每个贡献都可信",
+      "paragraphs": [
+        "ES0250 Rev. 13 的 §2.8.11 指出：距上次 ADC 转换或校准超过 1 ms 后的转换结果可能错误；给出的处理是连续做两次、弃首留次。STM32L476 的修订 3（REV_ID 0x1003）与修订 4（0x1007）均须核对此项。不能仅因开了四次平均，就宣称首个错误贡献已经被消除。",
+        "本模型假定所有入账的 regular 值有效，不模拟该勘误、ADC 内部状态或模拟前端。硬件验收要单独覆盖空闲后恢复，明确哪次转换被舍弃、何时允许进入累加器，并证明操作符合实际模式；本文不提供一个未经验证的“多读一次”补丁。",
+        "为隔离问题，本文不热改注入序列、不发中途停止，也不使用双 ADC 或自动注入；这些配置有各自的手册与勘误边界。4 次、右移 2 的例子只研究贡献的时间分组，不验证所有比率的截断、舍入、阈值比较或 ENOB。"
+      ],
+      "sourceIds": [
+        "errata",
+        "rm"
+      ]
+    },
+    {
+      "label": "06 / BENCH ACCEPTANCE",
+      "title": "待执行的台架验收清单",
+      "paragraphs": [
+        "以下为本站建议，尚未执行。只在安全隔离、符合器件输入与供电额定值的低压台架测试，换接前断电；本站仅运行原创离线模型，不运行候选固件。"
+      ],
+      "bullets": [
+        "冻结 STM32L476 具体料号、REV_ID、板卡、时钟、采样时间、regular / injected 序列及模式字段；先用手册与勘误逐项审查，再确定实际触发、引脚和读取路径，不从本文推定映射。",
+        "先无注入建立基线，再在安全输入上加入可控注入与慢斜坡；保存触发、regular 完成和主机接收的证据，比较 continued 与 resumed 的交付间隔和动态偏差，不拿完成回调时间充当采样孔径。",
+        "逐步缩短可用 regular 空隙，确认 resumed 超期能被显式发现；停止高频注入后核验恢复组身份，continued 则检查最旧贡献的允许年龄与长间隔边界。",
+        "覆盖校准后 / 空闲超过 1 ms 后恢复、丢失读取及配置变更；独立验证勘误处理和有效标记，不以平均值看起来平滑、注入仍有中断或程序未死机作为验收。"
+      ]
+    },
+    {
+      "label": "07 / AVERAGE HAS A HISTORY",
+      "title": "迁移练习：换掉等待时间，不要偷偷换掉问题",
+      "paragraphs": [
+        "练习一：把唯一一次注入占用从 3 改为 8 个时隙。continued 的贡献时刻变为 1、2、11、12，均值 6.5，交付时代理年龄 5.5；resumed 为 11、12、13、14，均值 12.5，年龄仍 1.5，但首结果更晚。增加等待并没有增加一份独立测量信息。",
+        "练习二：固定同一个常量输入，两种模式可能给出相同均值。这个测试能检查算术，却不能证明动态新鲜度或不会饥饿；要加入时间变化和缺少足够空隙的反例。与旧 F407 软件平均、C2000 多通道 burst 不同，本例核心是抢占时硬件累加器的保留 / 清零语义。",
+        "厂商文档保留各自版权；本文只链接原始资料，提供原创解释、合成事件与算术测试，没有复制厂商图表或固件。未下载、编译、执行或烧录候选代码，没有本站或独立第三方实物复现；不是完整驱动或工业适用性证明。新增案例保持待学习，不改变既有学习状态。"
+      ]
+    }
+  ]
+});
+window.SensorCaseOverviews["st-l476-oversampling-interrupt"] = {
+  "problem": "ADC 平均被高优先级转换打断时，保留旧数据会混合不同年龄，全部重来又可能迟迟没有新结果。",
+  "method": "先列出一份平均由哪些完成事件贡献，再分别检查连续性、最旧贡献年龄与结果交付期限。",
+  "boundary": "依据 STM32L476 厂商手册和原创事件模型，未板测；时隙不是器件时钟，模式字段不是可烧录配置。",
+  "takeaway": "攒够次数不等于连续采样；保持连续，也不等于一定能按时得到新读数。"
+};
