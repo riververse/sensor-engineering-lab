@@ -174,3 +174,11 @@ Adds a source-checked TIMER/PPI/SAADC/EasyDMA case and original three-channel fr
 - Original completed-event model separates accumulation, synthetic age and liveness. Its slot ordering is explicitly not a silicon arbitration or sampling-aperture simulation. No deployable mapping, hardware measurement or candidate-code execution.
 - All seventeen prior case objects and overviews, lessons, styles, timing workbench and manually controlled learning state remain unchanged. No generator is used.
 - Run `node l476-oversampling.test.cjs` and every existing `*.test.cjs`.
+
+## S32K144 PDB/ADC COCO handshake case (verified 2026-11-02)
+
+- `#case/nxp-s32k144-coco-handshake`: conversion completion, COCO rising-edge acknowledgement, result consumption and PDB lock are separate events.
+- Fixed public sources: AN12217 Rev. 2.0 (September 2024), S32K1XXRM Rev. 13 (April 2020), and a March 2020 NXP technical reply on S32K146 as supplementary family evidence. Current account-required revisions were not accessed; this is not a current-mask configuration or errata certification.
+- Original single-slot event model contrasts timely reads, a retained-high COCO, late reads and separate error/lock state. A conservative read-before-next-request budget is explicitly not the hardware's unique deadline. No peripheral timing simulation, DMA mapping, recovery recipe, candidate-code execution or hardware reproduction.
+- All eighteen prior cases and overviews remain byte-for-byte intact. Only the manufacturer enumeration changes in the renderer; lessons, numerical models, designs and manually controlled progress are preserved. No case generator is used.
+- Run `node s32k-coco.test.cjs` and every existing `*.test.cjs`.
