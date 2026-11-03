@@ -182,3 +182,11 @@ Adds a source-checked TIMER/PPI/SAADC/EasyDMA case and original three-channel fr
 - Original single-slot event model contrasts timely reads, a retained-high COCO, late reads and separate error/lock state. A conservative read-before-next-request budget is explicitly not the hardware's unique deadline. No peripheral timing simulation, DMA mapping, recovery recipe, candidate-code execution or hardware reproduction.
 - All eighteen prior cases and overviews remain byte-for-byte intact. Only the manufacturer enumeration changes in the renderer; lessons, numerical models, designs and manually controlled progress are preserved. No case generator is used.
 - Run `node s32k-coco.test.cjs` and every existing `*.test.cjs`.
+
+
+## ADXL355 shared-SDA response case (verified 2026-11-03)
+
+- `#case/adi-adxl355-shared-sda-ack`: different target addresses do not prove shared-bus compatibility. ADXL355 Rev. D (June 2025), p.29, documents responses to matching bytes even when not addressed; UM10204 Rev. 7.0 supplies the ACK and wired-AND background.
+- Original byte/ACK logic tests distinguish target intent from observed line state. They do not simulate the sensor state machine, analog bus, MCU flags, error rate or recovery timing. Changing address moves the risk-byte set rather than eliminating it.
+- The independent-SDA direction requires circuit review. No disputed multiplexed-pin workaround, deployable driver, firmware execution or hardware reproduction is supplied. All nineteen previous case objects and overviews, six lessons, runtime, style and manual learning state are preserved.
+- Run `node adxl355-shared-sda.test.cjs` and every existing `*.test.cjs`.
