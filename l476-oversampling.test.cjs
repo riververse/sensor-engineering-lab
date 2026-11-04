@@ -95,11 +95,11 @@ const read=f=>fs.readFileSync(__dirname+'/'+f,'utf8'),source=read('engineering-c
 const marker='\n// Original oversampling-interruption case; all seventeen prior cases retained unchanged.\n';
 ok(source.includes(marker));eq(crypto.createHash('sha256').update(source.slice(0,source.indexOf(marker))).digest('hex'),'d86809793143209c476ab4e2ae84adb6dfd85478d4ae5f62bfdc3c241dadebd0');
 const context={window:{}};vm.runInNewContext(source,context);const cases=JSON.parse(JSON.stringify(context.window.SensorCases));
-eq(cases.length,20);eq(new Set(cases.map(c=>c.id)).size,20);
+eq(cases.length,21);eq(new Set(cases.map(c=>c.id)).size,21);
 const study=cases.find(c=>c.id==='st-l476-oversampling-interrupt');eq(cases[17].id,study.id);eq(study.status,'待学习');eq(study.verified,'2026-11-01');eq(study.published,'2015-06');eq(study.reproduction,'未本站实物复现');eq(study.blocks.length,7);eq(study.sources.length,3);
 const prose=JSON.stringify(study);
 for(const token of ['STM32L476','TROVS=0','JOVSE=0','ROVSM=0/TROVS=1','不支持','OVSR','OVFS','2026-04-02','2025-05-26','[1,2,6,7]','116','130','128','136','1.5','5.5','0x1003','0x1007','超过 1 ms','弃首留次','不是对芯片同时到达边沿','模型假定所有入账','有限测试只能证明观察区间','尚未执行','未下载、编译、执行或烧录候选代码','没有本站或独立第三方实物复现'])ok(prose.includes(token),token);
 eq(study.blocks.find(b=>b.title==='待执行的台架验收清单').bullets.length,4);
 for(const b of study.blocks)for(const id of b.sourceIds||[])ok(study.sources.some(s=>s.id===id));
-ok(read('index.html').includes('engineering-cases.js?v=20261103.1'));
+ok(read('index.html').includes('engineering-cases.js?v=20261104.1'));
 console.log(`${checks} original completed-event, age, liveness, validation and exact legacy-preservation checks passed. No silicon timing, candidate code or board executed.`);

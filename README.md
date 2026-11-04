@@ -190,3 +190,11 @@ Adds a source-checked TIMER/PPI/SAADC/EasyDMA case and original three-channel fr
 - Original byte/ACK logic tests distinguish target intent from observed line state. They do not simulate the sensor state machine, analog bus, MCU flags, error rate or recovery timing. Changing address moves the risk-byte set rather than eliminating it.
 - The independent-SDA direction requires circuit review. No disputed multiplexed-pin workaround, deployable driver, firmware execution or hardware reproduction is supplied. All nineteen previous case objects and overviews, six lessons, runtime, style and manual learning state are preserved.
 - Run `node adxl355-shared-sda.test.cjs` and every existing `*.test.cjs`.
+
+
+## ADS1115 configuration-generation case (verified 2026-11-04)
+
+- `#case/ti-ads1115-config-generation`: configuration writes, in-flight old conversions, and repeated result reads have different identities. Ordinary ADS1115 only, not ADS1115L or ADS1115-Q1.
+- TI SBAS444E electrical body (December 2024), §7.4.2 and §5.5. Original nominal event arithmetic and application acceptance checks are not a driver, delay guarantee, silicon model or hardware reproduction.
+- All twenty previous case objects and overviews remain byte-identical. Lessons, renderer, styles and manually controlled progress are unchanged. No generator or candidate code is run.
+- Run `node ads1115-config.test.cjs` and every existing `*.test.cjs`.

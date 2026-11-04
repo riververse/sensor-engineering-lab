@@ -46,13 +46,13 @@ for(const fn of [()=>hazardByte(0,0,true),()=>hazardByte('0x53',0,true),()=>haza
 const source=read('engineering-cases.js'),ctx={window:{}};vm.runInNewContext(source,ctx);
 const c=ctx.window.SensorCases.find(x=>x.id==='adi-adxl355-shared-sda-ack');
 ok(c,'new stable ID exists');eq(c.status,'待学习','new content unlearned');eq(c.reproduction,'未本站实物复现','no board reproduction');eq(c.verified,'2026-11-03','verification date');eq(c.published,'2025-06','version date separate');
-eq(ctx.window.SensorCases.length,20,'twenty cases');eq(Object.keys(ctx.window.SensorCaseOverviews).length,20,'twenty overviews');
+eq(ctx.window.SensorCases.length,21,'twenty-one cases');eq(Object.keys(ctx.window.SensorCaseOverviews).length,21,'twenty-one overviews');
 const content=JSON.stringify(c);
 for(const t of ['Rev. D','UM10204','0x1D','0x53','0x3A/0x3B','0xA6/0xA7','独立 SDA','第九个时钟','NACK','未被寻址','未下载'])ok(content.includes(t),'explicit contract '+t);
 ok(content.includes('未测量 ACK 宽度'),'no waveform measurement');ok(content.includes('不是模拟 ADXL355 内部状态机'),'restricted model');ok(content.includes('CS/SCL')&&content.includes('SCLK/VSSIO'),'pin discrepancy disclosed');
 eq(Array.from(c.sources,s=>new URL(s.url).hostname),['www.analog.com','www.nxp.com'],'primary sources only');
 const prefix=Buffer.from(source).subarray(0,205605);
 eq(crypto.createHash('sha256').update(prefix).digest('hex'),'3f8994507cedbd1a843221f9ca829d379c3e2258c59625802c5de12c82cc576b','nineteen old cases/overviews byte-identical');
-ok(read('index.html').includes('engineering-cases.js?v=20261103.1'),'new content cache version');
-ok(read('index.html').includes('二十篇来源核验工程案例'),'metadata count');
+ok(read('index.html').includes('engineering-cases.js?v=20261104.1'),'new content cache version');
+ok(read('index.html').includes('二十一篇来源核验工程案例'),'metadata count');
 console.log(JSON.stringify({kind:'original_byte_and_ACK_slot_logic_not_ADXL355_or_MCU_simulation',checks,byteConfigurations:512,invalidInputs:rejected,oldSourcePrefixPreserved:true}));
