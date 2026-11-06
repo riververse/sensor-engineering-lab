@@ -198,3 +198,12 @@ Adds a source-checked TIMER/PPI/SAADC/EasyDMA case and original three-channel fr
 - TI SBAS444E electrical body (December 2024), §7.4.2 and §5.5. Original nominal event arithmetic and application acceptance checks are not a driver, delay guarantee, silicon model or hardware reproduction.
 - All twenty previous case objects and overviews remain byte-identical. Lessons, renderer, styles and manually controlled progress are unchanged. No generator or candidate code is run.
 - Run `node ads1115-config.test.cjs` and every existing `*.test.cjs`.
+
+## RP2040 fractional-pacing case (verified 2026-11-05)
+
+- `#case/rpi-rp2040-fractional-pacing`: distinguish average sample-rate error, deterministic interval variation and DMA transport timing. RP2040 only, not RP2350.
+- Sources: RP2040 Datasheet build 3184e62-clean (2025-02-20), Pico SDK 2.3.1 at `079c6f39023649b154152db30f1d781e884879bc`, and official pico-examples at `0d62f75bafc2c8120d3276c3343d1a9195e909e9`. The two repositories were independently read, not built together or executed.
+- Original ideal-clock example: 48 MHz, INT=1087, FRAC=111 gives approximately 44100.072136 SPS, with 1088/1089-cycle intervals. A synthetic first-order accumulator produces 145 short and 111 long intervals per 256-interval block. Initial phase is a teaching assumption, not a silicon reset prediction; 256 intervals connect 257 start points.
+- Official mapping is ADC FIFO → DREQ_ADC=36 → a dynamically assigned DMA channel. It is a transport request, not an ADC trigger. The published 8-bit, 1000-sample full-speed demo is not a no-loss, 12-bit-quality or timestamp guarantee.
+- All twenty-one previous cases and overviews are retained byte-for-byte. Renderer changes only add Raspberry Pi to the manufacturer list. Lessons, styles, models, timing workbench and manually controlled progress stay unchanged; new material remains pending learning. No generator, firmware, toolchain or hardware is executed.
+- Run `node rp2040-pacing.test.cjs` and every existing `*.test.cjs`. Tests are original bounded integer arithmetic, closed-form comparison and content/preservation checks, not a timing, analog, DMA or silicon simulation.

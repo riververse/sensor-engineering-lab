@@ -2562,3 +2562,109 @@ window.SensorCaseOverviews["ti-ads1115-config-generation"] = {
   "boundary": "依据公开手册与原创名义事件模型，未板测；时钟、总线和边界竞争仍需验证，不提供万能延时。",
   "takeaway": "配置写入成功与新配置结果已经可读不是同一件事；读数次数也不是转换完成次数。"
 };
+
+// Original RP2040 fractional-pacing case; all twenty-one prior cases retained unchanged.
+window.SensorCases.push({
+  "id": "rpi-rp2040-fractional-pacing",
+  "maker": "Raspberry Pi",
+  "title": "平均采样率对了，每个间隔也一样吗？",
+  "subtitle": "RP2040 · ADC 分数节拍 / DMA 搬运 / 时间轴误差",
+  "question": "DMA 收满一块数据，能否直接证明这些点严格等间隔？",
+  "summary": "从官方采集示例出发，把分频量化、逐间隔变化与结果搬运拆成三个不同问题。",
+  "published": "2025-02-20",
+  "publicationLabel": "所读版本发布",
+  "revision": "RP2040 Datasheet build 3184e62-clean（2025-02-20）；Pico SDK 2.3.1 与示例分别冻结到官方仓库提交。",
+  "verified": "2026-11-05",
+  "evidence": "厂商手册机制 + 固定官方源码静态核读 + 原创整数时间模型；非板测报告",
+  "reproduction": "未本站实物复现",
+  "status": "待学习",
+  "lessons": ["adc", "error", "debug"],
+  "timingRelated": true,
+  "conditions": "限定 RP2040，非 RP2350；单 ADC、单输入、48 MHz 理想 clk_adc、稳定连续转换、无丢样。SDK 版本为 2.3.1，commit 079c6f39023649b154152db30f1d781e884879bc；示例 commit 0d62f75bafc2c8120d3276c3343d1a9195e909e9。两者分别只读核验，未证明配套构建。44.1 kSPS 是本站另设的教学目标，不是官方示例原参数。无实物、板卡引脚验收、固件构建或可部署驱动。",
+  "sources": [
+    {"id":"ds", "label":"RP2040 Datasheet · §§4.9.2.2、4.9.2.5 / Table 572，pp.559–561、566", "url":"https://datasheets.raspberrypi.com/rp2040/rp2040-datasheet.pdf", "date":"所读 build-date 2025-02-20；build-version 3184e62-clean；不是本次新发布"},
+    {"id":"example", "label":"官方 pico-examples · adc/dma_capture/dma_capture.c · 固定提交", "url":"https://github.com/raspberrypi/pico-examples/blob/0d62f75bafc2c8120d3276c3343d1a9195e909e9/adc/dma_capture/dma_capture.c", "date":"仓库提交 2026-09-03；示例文件版权 2021，不将提交日期当首发日期"},
+    {"id":"api", "label":"Pico SDK · hardware_adc/adc.h · adc_set_clkdiv 与 adc_fifo_drain", "url":"https://github.com/raspberrypi/pico-sdk/blob/079c6f39023649b154152db30f1d781e884879bc/src/rp2_common/hardware_adc/include/hardware/adc.h", "date":"固定 SDK 仓库提交 2026-09-04；只读函数与注释，未执行"},
+    {"id":"regs", "label":"Pico SDK · RP2040 ADC 寄存器定义 · DIV.INT / FRAC", "url":"https://github.com/raspberrypi/pico-sdk/blob/079c6f39023649b154152db30f1d781e884879bc/src/rp2040/hardware_regs/include/hardware/regs/adc.h", "date":"固定 SDK 仓库提交 2026-09-04；RP2040 专属路径"},
+    {"id":"dreq", "label":"Pico SDK · RP2040 DREQ 表 · DREQ_ADC=36", "url":"https://github.com/raspberrypi/pico-sdk/blob/079c6f39023649b154152db30f1d781e884879bc/src/rp2040/hardware_regs/include/hardware/regs/dreq.h", "date":"固定 SDK 仓库提交 2026-09-04；不是 RP2350 的映射表"},
+    {"id":"platform", "label":"Pico SDK · RP2040 platform.h · 默认分频舍入选项", "url":"https://github.com/raspberrypi/pico-sdk/blob/079c6f39023649b154152db30f1d781e884879bc/src/rp2040/pico_platform/include/pico/platform.h", "date":"固定 SDK 仓库提交 2026-09-04；默认 PICO_CLKDIV_ROUND_NEAREST=1"},
+    {"id":"version", "label":"Pico SDK · pico_sdk_version.cmake · 2.3.1", "url":"https://github.com/raspberrypi/pico-sdk/blob/079c6f39023649b154152db30f1d781e884879bc/pico_sdk_version.cmake", "date":"固定 SDK 仓库提交 2026-09-04；版本文件为 2.3.1"}
+  ],
+  "blocks": [
+    {
+      "label":"01 / THE TIMER IS INSIDE THE ADC",
+      "title":"设置的是启动节拍，不是让 DMA 代替采样",
+      "paragraphs":[
+        "手册 §4.9.2.2 与 Table 572：ADC 的节拍器有 16 位整数和 8 位小数部分。非零分数通过一阶 delta-sigma 改变相邻间隔；稳态平均周期是 1+INT+FRAC/256，单个间隔为 INT+1 或 INT+2 个 clk_adc 周期。写 DIV 字段会重置分频器。这里的 delta-sigma 是数字节拍机制，不是把 SAR ADC 变成了 ΔΣ 转换器。",
+        "48 MHz 下完成一次转换需要 96 个 ADC 时钟。本文只分析远大于 96 周期的稳定节拍，不把忙期间忽略触发的机制简化为任意分频值都能使用同一公式；启动、重写 DIV、停机后首个样本的相位不在模型内。"
+      ],
+      "sourceIds":["ds","regs"]
+    },
+    {
+      "label":"02 / A VERIFIED DATA ROUTE",
+      "title":"官方示例证明了哪一条数据通路？",
+      "paragraphs":[
+        "所读官方 dma_capture 示例选 ADC 输入 0 / GPIO26，DIV=0 全速采集，目标是 1000 个字节。它启用 FIFO 与 DREQ，阈值为 1，结果右移到 8 位；DMA 固定读 ADC FIFO、递增写缓冲区，先启动 DMA 再启动 ADC。样例同时有 PIO 电阻 DAC 演示，本页未复制或运行该部分，也不提供接线建议。",
+        "精确映射仅限 RP2040：ADC FIFO → DREQ_ADC=36 → 所分配 DMA 通道。此信号控制结果搬运，不能凭它推导 ADC 启动时间。示例没有固定 DMA 通道号，也没有 STM32 TIM/TRGO、NXP XBAR 或外部定时器到 ADC 的触发映射。",
+        "示例完成后清除连续采集并调用 adc_fifo_drain；所读 SDK 函数先等待 READY，再清掉残留 FIFO。其 8 位读取看不到 bit 15 的逐样本错误标志，示例明确关闭该标志。它是采集教学起点，不是无丢样、12 位精度或时间戳完整性的证明。"
+      ],
+      "sourceIds":["example","api","dreq"]
+    },
+    {
+      "label":"03 / A RATE IS AN AVERAGE",
+      "title":"44.1 kSPS 的两种间隔，算出来并不相等",
+      "formula":"原创目标：f_adc = 48,000,000 Hz，f目标 = 44,100 SPS\n理想 div = f_adc/f目标 − 1 ≈ 1087.435374\n最近 1/256 格点：INT=1087，FRAC=111\n平均周期 = 1088.43359375 cycles\nf平均 ≈ 44100.072136 SPS，约 +1.635745 ppm\n短间隔 = 1088 cycles ≈ 22.666667 μs\n长间隔 = 1089 cycles = 22.687500 μs",
+      "paragraphs":[
+        "这是对明示理想时钟和已编码字段的原创算术，不是器件频率测量。相邻间隔相差一个 ADC 时钟，即约 20.833333 ns；即使平均速率非常接近目标，每次采样也不落在完全均匀的网格上。实际时钟误差仍会按比例改变这些数值。",
+        "所读 SDK 2.3.1 的 adc_set_clkdiv 接收的是 div，不是含额外 1 的完整周期；默认最近舍入由 RP2040 platform.h 与 ADC 专用开关共同决定，构建配置可以覆盖它。本文冻结 INT/FRAC 后再做整数模型，不声称对任意编译器、浮点输入和配置都重现了 API 行为。",
+        "反例：漏减 1 而把 48 MHz/44.1 kHz 当 div，最近格点会给出约 44059.592320 SPS，约 −916.273930 ppm；只用整数周期 1088 则约为 44117.647059 SPS，约 +400.160064 ppm。平均速率误差与逐间隔变化需要分别验收。"
+      ],
+      "sourceIds":["api","platform","version"]
+    },
+    {
+      "label":"04 / A BOUNDED ORIGINAL MODEL",
+      "title":"把时间误差画出来，而不是编造一条芯片波形",
+      "formula":"独立教学模型：a₀=0，n=1087，F=111\ncₖ = n+1+floor((aₖ₋₁+F)/256)\naₖ = (aₖ₋₁+F) mod 256\ntₖ = Σcᵢ / f_adc（t₀=0）\n256 个间隔：145 短 + 111 长，共 278639 cycles\n持续约 5804.979167 μs；这是 257 个启动点之间的跨度",
+      "paragraphs":[
+        "原创累加器只是一个满足平均分频约束的离散模型，a₀=0 是人为选定的初相；不宣称这就是硅片重置后第一个长间隔的位置。改变模型初相会移动长短次序，但一个完整 256 间隔块的总和相同。测试逐项对比独立闭式计数，而不是运行厂商驱动。",
+        "在这个模型里，累计时刻与同平均速率的均匀网格之差有界，不随时间无穷增长；它与偏离目标 44100 SPS 的长期速率偏差不是同一个量。不要把 N 个样本写成 N 个首尾间隔：首个到末个启动点只有 N−1 个间隔。",
+        "这种确定性的间隔变化不能直接当成独立白噪声抖动，套一个随机抖动信噪比公式。本页不预测杂散幅度、FFT 性能、采样保持孔径、模拟误差、DMA 延迟或任意频率的硬件相位响应。"
+      ]
+    },
+    {
+      "label":"05 / TRANSPORT IS NOT A CLOCK",
+      "title":"一块完整的内存，不会自动补齐采样时间证据",
+      "paragraphs":[
+        "本站验收建议：分别保存配置的时钟来源、DIV 字段与采集代际，再核对数据完整性。DMA 完成时间包含转换完成后的 FIFO、总线与调度影响；仅凭最后一次回调，既不能逐点恢复启动时间，也不能证明样本严格等间隔。",
+        "模型可以计算名义节拍网格，真实系统仍要证明时钟、初相、无丢样以及配置未变。发生溢出、停启或改 DIV 后，不沿用旧时间轴硬拼下一块。本文没有设计连续 DMA 重装、FIFO 恢复或多通道同步驱动。",
+        "若应用必须严格等间隔，先从实际时钟选择可表示的整数周期并评估速率误差，或另行审查支持所需触发的硬件方案；不能把 DREQ_ADC 换成 DMA 定时请求，就宣称改变了 ADC 的取样节拍。"
+      ]
+    },
+    {
+      "label":"06 / BENCH ACCEPTANCE",
+      "title":"待执行的台架验收清单",
+      "paragraphs":["以下为本站建议，尚未执行。仅限经过电路审查、安全隔离且输入额定值匹配的低压台架；变更接线前断电。本文没有可烧录固件，也没有完成硅版本勘误审查。"],
+      "bullets":[
+        "冻结完整器件与板卡版本、SDK/示例提交、构建舍入选项、clk_adc 来源及实测频率；读取并记录最终 INT/FRAC，不把用户输入的小数直接当硬件字段。",
+        "分别对照整数与分数节拍，明确观测点测到的是启动、转换完成、FIFO 读取还是中断。GPIO 中断翻转含服务延迟，不能直接标成采样孔径抖动。",
+        "记录完整性标志、首末记录、启动与停机边界；覆盖采集暂停、DIV 变更与 FIFO 异常，验证旧时间轴不会被无证据地续接。错误样本可见性需要重新审查传输位宽。",
+        "分开验收平均速率、短长间隔、累计时间偏差与模拟测量质量；保留原始记录和未通过项，不用本页 ppm 算术、合成曲线或 DMA 完成次数代替实测。"
+      ]
+    },
+    {
+      "label":"07 / TRANSFER THE LESSON",
+      "title":"练习：要的是平均准确，还是每次都准时？",
+      "paragraphs":[
+        "练习一：把教学目标改为 48 kSPS。理想 48 MHz 时钟对应 INT=999、FRAC=0；模型的间隔全为 1000 cycles。再加入一个假设时钟偏差，说明没有分数间隔变化也不代表绝对采样率准确。",
+        "练习二：保持 INT=1087，将 FRAC 改为 128；独立模型在两个相邻整数间隔间变化，完整两间隔块的和固定。改变初相只移动排列；比较同平均网格、目标网格和 DMA 接收时间，分别写明能够证明什么。",
+        "资料与代码保留 Raspberry Pi 的版权。手册声明 CC BY-ND 4.0，所读示例与 SDK 文件为 BSD-3-Clause；本页只链接原文，提供原创解释和合成整数检查，不重制手册图表、不分发厂商代码。未编译、执行或烧录候选代码，没有本站或独立第三方实物复现；新材料保持待学习，旧课程与手动进度不变。"
+      ]
+    }
+  ]
+});
+window.SensorCaseOverviews["rpi-rp2040-fractional-pacing"] = {
+  "problem":"采样率的平均值很接近目标，但相邻样本仍可能有不同间隔，完整的 DMA 缓冲也证明不了严格等间隔。",
+  "method":"先核对实际分频字段与结果搬运路径，再分别计算平均速率、短长间隔和累计时间偏差。",
+  "boundary":"依据官方资料与原创离散模型，尚未板测；不预测硬件初相、采样孔径、杂散或 DMA 延迟。",
+  "takeaway":"采样节拍和数据搬运是两条证据链；平均准确、每次准时与完整收到数据，需要分开验证。"
+};
