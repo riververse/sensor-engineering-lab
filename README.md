@@ -207,3 +207,12 @@ Adds a source-checked TIMER/PPI/SAADC/EasyDMA case and original three-channel fr
 - Official mapping is ADC FIFO → DREQ_ADC=36 → a dynamically assigned DMA channel. It is a transport request, not an ADC trigger. The published 8-bit, 1000-sample full-speed demo is not a no-loss, 12-bit-quality or timestamp guarantee.
 - All twenty-one previous cases and overviews are retained byte-for-byte. Renderer changes only add Raspberry Pi to the manufacturer list. Lessons, styles, models, timing workbench and manually controlled progress stay unchanged; new material remains pending learning. No generator, firmware, toolchain or hardware is executed.
 - Run `node rp2040-pacing.test.cjs` and every existing `*.test.cjs`. Tests are original bounded integer arithmetic, closed-form comparison and content/preservation checks, not a timing, analog, DMA or silicon simulation.
+
+
+## F28004x PPB delay-evidence case (verified 2026-11-07)
+
+- `#case/ti-f28004x-ppb-delay`: trigger-to-acquisition-start capture, not aperture, EOC or DMA completion. Primary source: TI SPRUI33H (June 2024), §13.8.4 p.1554 and Table 13-76 p.1683.
+- Original modular counter and quiet-window model separates ordinary zero crossing from whole-wrap ambiguity; a separate proven bound strictly below 4096 cycles is required. Associated software-triggered SOC is unsupported; software competition from a different SOC does not invalidate the hardware-triggered capture.
+- Synthetic ownership and integrity gates are application assumptions, not hardware metadata. No silicon arbitration, atomic-read driver, errata certification, firmware execution or hardware reproduction is claimed.
+- All 22 previous cases/overviews and runtime, lessons, styling, timing workbench and manual learning state remain unchanged. No generator is used.
+- Run `node ppb-delay.test.cjs` and every existing `*.test.cjs`.
