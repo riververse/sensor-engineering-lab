@@ -93,7 +93,7 @@ eq(source.split(marker).length,2,'exactly one append');
 eq(crypto.createHash('sha256').update(source.split(marker)[0]).digest('hex'),'2a1cac66cd16b1b0447a2beaa7b6bcc8ab49fcb7886dc9acd16a3e3ff8b5f2e1','entire eighteen-case source prefix retained');
 const ctx={window:{}};vm.createContext(ctx);vm.runInContext(source,ctx);
 const cases=JSON.parse(JSON.stringify(ctx.window.SensorCases)),a=cases.find(c=>c.id==='nxp-s32k144-coco-handshake'),text=JSON.stringify(a);
-eq(cases.length,23);eq(a.id,'nxp-s32k144-coco-handshake');eq(a.maker,'NXP');eq(a.blocks.length,7);eq(a.verified,'2026-11-02');eq(a.status,'待学习');eq(a.reproduction,'未本站实物复现');
+eq(cases.length,24);eq(a.id,'nxp-s32k144-coco-handshake');eq(a.maker,'NXP');eq(a.blocks.length,7);eq(a.verified,'2026-11-02');eq(a.status,'待学习');eq(a.reproduction,'未本站实物复现');
 for(const token of ['ACFE=0','AVGE=0','ADCO=0','pretrigger 4','SC1E / R[4]','Rev. 13','Rev. 2.0','Account Required','S32K146','t=12','t=15','PDB_SC[DMAEN]','ADC_SC2[DMAEN]','2 个外围时钟','不是 PDB 的 DLY','不是已修好的驱动','尚未执行','不因此断言硬件必然失效'])ok(text.includes(token),token);
 eq(a.blocks.find(x=>x.title==='待执行的台架验收清单').bullets.length,4);
 for(const b of a.blocks)for(const id of b.sourceIds||[])ok(a.sources.some(x=>x.id===id),'resolved source');

@@ -216,3 +216,11 @@ Adds a source-checked TIMER/PPI/SAADC/EasyDMA case and original three-channel fr
 - Synthetic ownership and integrity gates are application assumptions, not hardware metadata. No silicon arbitration, atomic-read driver, errata certification, firmware execution or hardware reproduction is claimed.
 - All 22 previous cases/overviews and runtime, lessons, styling, timing workbench and manual learning state remain unchanged. No generator is used.
 - Run `node ppb-delay.test.cjs` and every existing `*.test.cjs`.
+
+## ADS131M04 response-type case (verified 2026-11-08)
+
+- `#case/ti-ads131m04-response-identity`: four-register RREG responses and ordinary four-channel frames both occupy six 24-bit words, yet only the latter contains ADC data. The previous command determines the response; a single-register RREG is a distinct case.
+- Official evidence: SBAS890D (May 2021), pp.28, 36–42, 45 and 50; SBAA106A (August 2021), §3. A known 09h–0Ch read avoids reserved addresses. Original equal-length/valid-CRC counterexamples are not captured device traffic.
+- The restricted model requires an independently established previous command and complete transaction. It excludes input-CRC failures, writes, resets, timeout recovery, word-length changes, filter settling and sample-time reconstruction. No communication recipe or hardware reproduction is claimed.
+- All 23 previous cases and overviews remain byte-for-byte in the source prefix. Runtime, styles, lessons, timing workbench and manually controlled progress are unchanged. No generator is used.
+- Run `node ads131-response.test.cjs` and every existing `*.test.cjs`. Tests perform only reviewed website/content checks and original offline models, never vendor code or hardware actions.
