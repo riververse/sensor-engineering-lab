@@ -129,7 +129,7 @@ eq(source.split(marker).length,2);
 const hash=x=>crypto.createHash('sha256').update(x).digest('hex');
 eq(hash(source.split(marker)[0]),'c0d6df03af06e856f7d580a7bc47540b577e90813f87fa36193f48724e98a899','all 23 prior cases/overviews preserved byte-for-byte');
 const ctx={window:{}};vm.runInNewContext(source,ctx);const all=ctx.window.SensorCases,over=ctx.window.SensorCaseOverviews,id='ti-ads131m04-response-identity',c=all.find(x=>x.id===id);
-eq(all.length,24);eq(Object.keys(over).length,24);eq(c.status,'待学习');eq(c.reproduction,'未本站实物复现');eq(c.verified,'2026-11-08');eq(c.blocks.length,7);
+eq(all.length,25);eq(Object.keys(over).length,25);eq(c.status,'待学习');eq(c.reproduction,'未本站实物复现');eq(c.verified,'2026-11-08');eq(c.blocks.length,7);
 eq(hash(JSON.stringify(all.slice(0,23))),'edc60acbfbaf938aa10efc74251368ff9f69830b563068206a5d1d4fe17d111a','all 23 prior case objects unchanged');
 const old={};for(const x of all.slice(0,23))old[x.id]=over[x.id];
 eq(hash(JSON.stringify(old)),'4fa169d347e979173db3f9e3416cc83476e536f1928868a6b57e0fb18d14da24','all 23 prior overviews unchanged');
@@ -138,5 +138,5 @@ for(const term of ['SBAS890D','SBAA106A','非 ADS131M04-Q1','A483h','E483h','CH0
 for(const [f,h] of [['app.js','98cf80f0fd5bb61c578ba516471dda9ecb69c2b8152b9006e7ce57f895b1f1ed'],['style.css','ae22afcc302123fba024b368a60e63ca2eb05b38590056c7a6210692b7b2b25e'],['models.js','61aeeaa1ceface1d6eac26594e34e791503dec2b3d126e7514f98df20c0546e5'],['content.js','b515149000b53e48a593c74df58a7a34d563b48f6c878c99a73ad615e9cdcf40'],['mcu-timing.js','75b49417d443c63eb78804e2689b29c2b3329fed617896bb89f547c91e431416']])eq(hash(read(f)),h,f+' unchanged');
 for(const s of c.sources)eq(new URL(s.url).hostname,'www.ti.com');
 for(const b of c.blocks)for(const ref of b.sourceIds||[])ok(c.sources.some(s=>s.id===ref));
-ok(read('index.html').includes('engineering-cases.js?v=20261108.1'));ok(read('index.html').includes('二十四篇来源核验工程案例'));
+ok(read('index.html').includes('engineering-cases.js?v=20261109.1'));ok(read('index.html').includes('二十五篇来源核验工程案例'));
 console.log(`${checks} original ADS131M04 CRC-oracle, response-type, history-gate and preservation checks passed. No hardware or candidate code executed.`);

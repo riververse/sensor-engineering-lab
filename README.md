@@ -224,3 +224,11 @@ Adds a source-checked TIMER/PPI/SAADC/EasyDMA case and original three-channel fr
 - The restricted model requires an independently established previous command and complete transaction. It excludes input-CRC failures, writes, resets, timeout recovery, word-length changes, filter settling and sample-time reconstruction. No communication recipe or hardware reproduction is claimed.
 - All 23 previous cases and overviews remain byte-for-byte in the source prefix. Runtime, styles, lessons, timing workbench and manually controlled progress are unchanged. No generator is used.
 - Run `node ads131-response.test.cjs` and every existing `*.test.cjs`. Tests perform only reviewed website/content checks and original offline models, never vendor code or hardware actions.
+
+
+## ADCC event-admission case (verified 2026-11-09)
+
+- `#case/adi-adcc-event-collision`: ADSP-CM408F same-timer, same-interface, equal-TIME events lose lower-priority entries despite free FIFO capacity; different-timer winners are forwarded in TMR0/TMR1 order. ADSP-CM40x HRM Rev. 0.3 (November 2015) defines timer units, arbitration and pairing; AN-1267 Rev. A (September 2014) supplies timing context.
+- Source discrepancies remain explicit: the application note describes event time in ACLK units while the later HRM says SYSCLK; its 450 ns table entry is separated from the 1350 ns conversion and 1600 ns availability figure. No vendor erratum resolution or board verification is claimed.
+- Original restricted admission and clock-arithmetic tests are not a pipeline, ADC, DMA, TRU, analog or silicon simulator. No candidate code or hardware is run. All prior 24 cases/overviews, runtime, styling and manual state are preserved.
+- Run `node adcc-event.test.cjs` and every existing `*.test.cjs`. No generator is used.
