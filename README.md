@@ -232,3 +232,12 @@ Adds a source-checked TIMER/PPI/SAADC/EasyDMA case and original three-channel fr
 - Source discrepancies remain explicit: the application note describes event time in ACLK units while the later HRM says SYSCLK; its 450 ns table entry is separated from the 1350 ns conversion and 1600 ns availability figure. No vendor erratum resolution or board verification is claimed.
 - Original restricted admission and clock-arithmetic tests are not a pipeline, ADC, DMA, TRU, analog or silicon simulator. No candidate code or hardware is run. All prior 24 cases/overviews, runtime, styling and manual state are preserved.
 - Run `node adcc-event.test.cjs` and every existing `*.test.cjs`. No generator is used.
+
+## Internal PFM write deadline case (verified 2026-11-10)
+
+- `#case/microchip-q43-flash-sampling-budget`: PIC18F57Q43 AN3548 Rev. B, with DS80000870K Table 2-1. Separates 50 µs typical word write from 75 µs maximum, 10 ms maximum page write and 11 ms maximum erase.
+- Original deadline/packing checks: 256 one-byte samples are 128 16-bit words; 128 reserved 100 µs slots are 12.8 ms versus a 25.6 ms block interval. This throughput calculation does not prove each write slot safe. A 12 + 8 + 75 + 5 µs hypothetical path leaves zero margin and fails the strict positive-margin rule.
+- No ADC/DMA stall behavior is inferred from CPU stalling. Sample packing order is an original convention, not verified vendor code. Pre-erasure, finite endurance, partial blocks and separate persistence proof are explicit.
+- Full app-note PDF reading hit size limits; official online sections and the errata PDF were read. The public repository README/project-directory model mismatch and unverified code license remain disclosed. No vendor code was downloaded or executed; no hardware reproduction or production configuration.
+- All 25 earlier case objects/overviews remain byte-for-byte in the source prefix. Only manufacturer coverage text changes in the renderer; lessons, styles, timing workbench and manual local state remain unchanged. No DESIGN file or generator exists in this repository tree.
+- Run `node flash-sampling.test.cjs` and every existing `*.test.cjs`.

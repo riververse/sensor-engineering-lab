@@ -3010,3 +3010,163 @@ window.SensorCaseOverviews["adi-adcc-event-collision"] = {
   "boundary": "历史ADI手册与原创受限模型，未板测；官方事件时间单位及表格存在差异，没有给出可烧录配置。",
   "takeaway": "先证明每个事件被接收，再证明它何时采样，最后证明整帧已交付，三步各要自己的证据。"
 };
+
+// Original Q43 flash-write budget case; all twenty-five prior cases retained unchanged.
+window.SensorCases.push({
+  "id": "microchip-q43-flash-sampling-budget",
+  "maker": "Microchip",
+  "title": "DMA 已经接上，写 Flash 为什么还要挑时机？",
+  "subtitle": "PIC18F57Q43 · 非易失写入 / 最坏时间 / 样本打包",
+  "question": "连续采样时，怎样同时检查一次写入的阻塞时间和一整块数据的保存期限？",
+  "summary": "把典型写入时间、最大写入时间、每样本空隙和缓冲区复用分开计算。",
+  "timingRelated": true,
+  "published": "2020-07",
+  "revision": "AN3548 Rev. B（2020-10）；DS80000870K §2.1；Q43 在线 NVM 章节 en-US-22",
+  "verified": "2026-11-10",
+  "evidence": "厂商应用笔记与存储器规格 + 本站原创期限算术；未执行候选固件或硬件",
+  "reproduction": "未本站实物复现",
+  "status": "待学习",
+  "lessons": [
+    "adc",
+    "debug",
+    "error"
+  ],
+  "conditions": "对象限定 AN3548 的 PIC18F57Q43 Curiosity Nano（DM164150）内部 PFM 录音路径；文档版本如上。原系统还用 AC164162 底板、Mic Click 与自制放大器，外部 Flash 2 Click 是另一存储路径。本例只讨论 10 kHz、8 位样本、256 字节块与 16 位 PFM 字，不提供固件、接线或寄存器初始化。未锁定实际芯片修订、工具链及板级最坏延迟；没有实物复现。",
+  "sources": [
+    {
+      "id": "an",
+      "label": "Microchip AN3548 §3.3 · 内部 PFM 写入调度",
+      "url": "https://onlinedocs.microchip.com/oxy/GUID-324A966D-1464-4B35-A7D1-DCAE052AC22C-en-US-5/GUID-7E6A9B14-68F0-412C-B5D3-2B59D18B4CBA.html",
+      "date": "Rev. B：2020-10；在线章节核验 2026-11-10。完整 AN3548 PDF 本次读取受大小限制，未完整审阅。"
+    },
+    {
+      "id": "adc",
+      "label": "Microchip AN3548 §3.1 · ADC 到双缓冲",
+      "url": "https://onlinedocs.microchip.com/oxy/GUID-324A966D-1464-4B35-A7D1-DCAE052AC22C-en-US-5/GUID-E735097F-2D02-4981-842F-449C56DE256D.html",
+      "date": "AN3548 Rev. B；只存 ADRESH 的 8 位结果；核验 2026-11-10。"
+    },
+    {
+      "id": "history",
+      "label": "Microchip AN3548 §10 · 文档修订历史",
+      "url": "https://onlinedocs.microchip.com/oxy/GUID-324A966D-1464-4B35-A7D1-DCAE052AC22C-en-US-5/GUID-C7F8D59F-0E81-4E0B-B352-5882B8E7B3F7.html",
+      "date": "A：2020-07；B：2020-10。网页版权年份不当作首发日期。"
+    },
+    {
+      "id": "errata",
+      "label": "Microchip DS80000870K · §2.1 / Table 2-1 存储器规格",
+      "url": "https://ww1.microchip.com/downloads/aemDocuments/documents/MCU08/ProductDocuments/Errata/PIC18F27-47-57Q43-Silicon-Errata-and-Datasheet-Clarifications-80000870K.pdf",
+      "date": "固定采用 Rev. K，PDF 页脚 ©2019–2022；核验 2026-11-10。非当前所有掩膜适用性认证。"
+    },
+    {
+      "id": "nvm",
+      "label": "Microchip PIC18F27/47/57Q43 §10 · NVM 单位",
+      "url": "https://onlinedocs.microchip.com/oxy/GUID-61202E6F-BC03-4D81-AAB9-269E87F9B49C-en-US-22/GUID-9D492915-FF1F-4035-BDA9-4E1F38D30104.html",
+      "date": "在线文档标识 en-US-22；16 位字、128 字页；核验 2026-11-10。"
+    },
+    {
+      "id": "word",
+      "label": "Microchip PIC18F27/47/57Q43 §10.3.5 · Word Write",
+      "url": "https://onlinedocs.microchip.com/oxy/GUID-61202E6F-BC03-4D81-AAB9-269E87F9B49C-en-US-22/GUID-988297AD-EB7E-481E-9FD5-2F4AED461F77.html",
+      "date": "在线文档标识 en-US-22；预擦除、NVM 完成与中断边界；核验 2026-11-10。"
+    },
+    {
+      "id": "repo",
+      "label": "Microchip 官方项目首页 · 仅用于版本边界核对",
+      "url": "https://github.com/microchip-pic-avr-examples/pic18f57q43-audio-record-playback",
+      "date": "首页核验 2026-11-10；README 与项目目录型号文字不同，未固定代码提交、未核验代码许可证。"
+    }
+  ],
+  "blocks": [
+    {
+      "label": "01 / STORAGE IS A REAL-TIME CLIENT",
+      "title": "先搬到 RAM，不等于已经写进 Flash",
+      "paragraphs": [
+        "AN3548 的采样 DMA 把 ADC 结果送入相邻的 ping / pong 缓冲；DMA5 再把完整的 256 字节块搬到 NVM 缓冲 RAM。真正写入内部 PFM 的工作仍交给 NVM 控制器。应用笔记选择逐字写，在采样定时器中断安排写入，并要求 ADC 已完成采样和保存后再进行。",
+        "文档明确描述 CPU 写入停顿和对采样率的影响，但这不等于证明 ADC 转换电路或所有 DMA 通道都会一起停住。本站未核验这些单元在每种 NVM 操作、仲裁与芯片修订下的行为，不以“ADC 全冻结”解释丢样，也不以“DMA 独立”承诺采集不受影响。这里审查的是写入窗口的期限合同。"
+      ],
+      "sourceIds": [
+        "an",
+        "adc"
+      ]
+    },
+    {
+      "label": "02 / TYPICAL IS NOT A DEADLINE",
+      "title": "50 μs 是典型值，预算不能只留另外一半",
+      "formula": "采样周期 T = 1 / 10 kHz = 100 μs\nAN3548：字写约 50 μs（典型）\nDS80000870K MEM37：字写最大 75 μs\n100 − 75 = 25 μs：尚未扣除采集、搬运、软件与余量\nMEM35 页写最大 10 ms；MEM36 页擦除最大 11 ms",
+      "paragraphs": [
+        "应用笔记用约 50 μs 说明逐字调度思路；固定版本勘误的 Table 2-1 在 Max 栏列出 75 μs，而非把它列为典型值。这里按该规格的标准工作条件计算。不同电压、温度、芯片修订及后续文档仍需项目重新核对，不能把一次常温测量当成最坏时间。",
+        "10 ms 和 11 ms 分别相当于 100、110 个 100 μs 周期。这只是时间长度的比值，不是实测丢样数量，也不能由此断言有 100 或 110 次 ADC 转换被阻止。更大的 RAM 块不会缩短一次不可抢占的 Flash 操作。"
+      ],
+      "sourceIds": [
+        "an",
+        "errata"
+      ]
+    },
+    {
+      "label": "03 / TWO BYTES PER WORD",
+      "title": "8 位样本与 16 位字，要先统一单位",
+      "formula": "1 样本 = 1 字节；1 PFM 字 = 2 字节\n256 样本 / 块 = 256 字节 = 128 个 PFM 字\n块形成时间：256 × 100 μs = 25.6 ms\n假设每个周期可写一字：128 个周期预算 = 12.8 ms\n128 × 75 μs = 9.6 ms：纯写入时间之和，不是整块端到端时间",
+      "paragraphs": [
+        "原应用将 12 位 ADC 结果左对齐，只搬 ADRESH 中的高 8 位，因为播放 DAC 也是 8 位。不能把它说成无损 12 位采集。本页为了验证单位，原创约定相邻两样本打成一字：低字节 s[2k]、高字节 s[2k+1]；例如 0x12、0xA5 合成 0xA512，读回再按同一约定拆开。这不是已核验的厂商源码字节序。",
+        "128 个可用写入槽足以装下一个块的 128 个字，是在每槽都按时可用、没有重试且块交接另有预算的假设下。12.8 ms 不是测得的完成延迟，更不能替代单次写入能否落在安全空隙的证明。奇数字节的末块需要明确有效长度与填充规则；本页模型直接拒绝，不悄悄补成有效样本。"
+      ],
+      "sourceIds": [
+        "adc",
+        "nvm"
+      ]
+    },
+    {
+      "label": "04 / WORST CASE CHANGES THE ANSWER",
+      "title": "一个原创反例：整块来得及，单次却没有余量",
+      "formula": "条件性单周期余量 M = T − A − H − W − G\nT=100 μs；A=12 μs；H=8 μs；G=5 μs（均为教学假设）\n按典型 W=50 μs：M=25 μs\n按最大 W=75 μs：M=0 μs → 不通过本文严格正余量条件\n若 A=8 μs、H=6 μs：M=6 μs（仍仅为条件性算术）",
+      "paragraphs": [
+        "A 表示从周期起点到样本已采集且已保存的最坏时间，H 为写入前后额外服务时间的总预算，G 是预留保护时间。三者不能重复计数；H 必须包含该路径需要的中断延迟、控制、完成确认及必要校验。本页数值都不是 PIC18F57Q43 的实测开销或推荐参数。",
+        "原创判据要求预擦除、样本保存已确认、单周期 M>0，并且块写入槽数足够且块截止期另有正余量。边界等号也不放行。即使256周期平均吞吐量看起来充足，75 μs 最坏字写仍能让本例的每槽审查失败。减少写入频率可以降低平均负荷，却不会缩短一次字写；延期也会吃掉块截止期。模型不预测 ADC、DMA 或 NVM 的真实仲裁。"
+      ]
+    },
+    {
+      "label": "05 / ERASURE IS NOT FREE",
+      "title": "把预擦除、完整性和寿命留在合同里",
+      "paragraphs": [
+        "手册的 Word Write 面向预擦除位置；已有内容不能当成可任意覆盖的 RAM。当前在线步骤还要求在写入完成前保持中断禁用。本文没有把 11 ms 擦除藏进 75 μs 字写，也不提供采集中擦页的通用恢复方法。应把擦除准备、地址边界、写错误检查、读回校验以及断电后的有效长度分别设计与验证。",
+        "固定版本勘误把 Flash 最低耐久度列为 1k 次，在表列温度条件 −40°C 至 +85°C 下，一次循环按一轮行擦除加一次自定时写定义。它不是“每个音频样本可永久覆盖 1000 次”的寿命保证；具体日志布局、反复编程限制和掉电策略仍待设计。本文不计算产品寿命，也不把保存在 RAM 等同于持久化成功。"
+      ],
+      "sourceIds": [
+        "word",
+        "errata"
+      ]
+    },
+    {
+      "label": "06 / BENCH ACCEPTANCE",
+      "title": "待执行的台架验收清单",
+      "paragraphs": [
+        "以下为本站建议，尚未执行。仅用于已审查、安全隔离、额定值匹配的低压台架；没有固件或实物复现，不用于危险电压测量。"
+      ],
+      "bullets": [
+        "冻结芯片修订、板卡、供电与温度范围、文档和实际采样时钟；确认内部 PFM 路径，而非误把外部 SPI Flash 的行为套入同一预算。",
+        "同步观察采样触发、结果保存、NVM 操作起止和缓冲复用；在负载与边界条件变化时量到 A、H 与字写持续时间，分别证明单槽和整块期限，不由 DMA 完成回调代替实际采样时间。",
+        "用带位置身份的已知低压输入或原创测试序列核对字节打包、块交接、尾块有效长度和读回；覆盖延期、写错误、复位与掉电，不静默补值或把未保存块标为成功。",
+        "把擦除移到明确授权的非采集阶段后另验启动首块；核对存储地址不覆盖程序、配置或元数据。记录耐久度假设与掉电有效性，不凭本页模型声称硬件可靠性。"
+      ]
+    },
+    {
+      "label": "07 / TRANSFER THE CHECK",
+      "title": "练习：把“写得快”改成两个可检验的条件",
+      "paragraphs": [
+        "练习一：保持 W=75 μs、A=12 μs、H=8 μs、G=5 μs，把采样周期从100 μs改成125 μs，重算单槽余量及256样本的块形成时间。再把H增加到30 μs，说明为什么整块平均吞吐量不能替代瞬时期限。",
+        "练习二：256个8位样本需要多少次16位写？如果128个写入槽中有一个因证据不足被跳过，能否按128周期窗口宣布整块已保存？把“采到了”“RAM中完整”“Flash写完”“读回匹配”列成不同证据，不凭预期长度推断成功。",
+        "资料版权归Microchip。这里只链接文档并提供原创说明、打包与预算算术，不转载图表或厂商代码。AN3548完整PDF本次受读取大小限制，正文采用可读官方章节；官方项目README写57Q43，而当前目录名含56Q43。项目目录未能读取，代码提交、实际目标和许可证均未核验，不能仅凭公开仓库称为开源或可复现。未下载、编译、执行或烧录候选代码，未操作硬件；新材料保持待学习。"
+      ],
+      "sourceIds": [
+        "history",
+        "repo"
+      ]
+    }
+  ]
+});
+window.SensorCaseOverviews["microchip-q43-flash-sampling-budget"] = {
+  "problem": "连续采样同时写内部Flash，缓冲区够大、DMA已经搬完，也不代表下一次采样前还有足够时间。",
+  "method": "先统一样本、字节和PFM字的单位，再分别核对最大字写时间、每周期空隙与整块保存期限。",
+  "boundary": "基于Microchip文档与原创算术，未板测；不假设ADC或所有DMA停顿，源码目标与许可证尚未核验。",
+  "takeaway": "平均吞吐量和一次操作的最坏阻塞是两道题，典型写入时间不能替代期限保证。"
+};
