@@ -74,7 +74,7 @@ const marker='\n// Original RP2040 fractional-pacing case; all twenty-one prior 
 eq(source.split(marker).length,2);
 eq(crypto.createHash('sha256').update(source.split(marker)[0]).digest('hex'),'01c83a855044082c49b1f1628d585da43b6a39f44b7b9449be0449057af21727','all 21 old cases and overviews retained byte-for-byte');
 const ctx={window:{}};vm.runInNewContext(source,ctx);const c=ctx.window.SensorCases.find(x=>x.id==='rpi-rp2040-fractional-pacing');
-eq(ctx.window.SensorCases.length,26);eq(Object.keys(ctx.window.SensorCaseOverviews).length,26);
+eq(ctx.window.SensorCases.length,27);eq(Object.keys(ctx.window.SensorCaseOverviews).length,27);
 eq(c.status,'待学习');eq(c.reproduction,'未本站实物复现');eq(c.verified,'2026-11-05');eq(c.blocks.length,7);eq(c.sources.length,7);
 const prose=JSON.stringify(c);
 for(const term of ['非 RP2350','3184e62-clean','2.3.1','DREQ_ADC=36','INT=1087','FRAC=111','44100.072136','1088.43359375','44059.592320','257 个启动点','a₀=0','不是官方示例原参数','尚未执行','不是把 SAR ADC 变成了','未编译、执行或烧录','CC BY-ND 4.0','BSD-3-Clause'])ok(prose.includes(term),term);
@@ -82,5 +82,5 @@ for(const b of c.blocks)for(const id of b.sourceIds||[])ok(c.sources.some(s=>s.i
 for(const s of c.sources){const u=new URL(s.url);eq(u.protocol,'https:');if(u.hostname==='github.com')ok(/\/blob\/[0-9a-f]{40}\//.test(u.pathname),'immutable source');}
 eq(crypto.createHash('sha256').update(read('app.js').replace('TI、ADI、ST、Nordic、Bosch Sensortec、NXP、Raspberry Pi、Microchip 的','TI、ADI、ST、Nordic、Bosch Sensortec、NXP 的')).digest('hex'),'475123490227bd353c3000e1dc3289110a4258426f21add3a0557eaf1146bef3','renderer only adds manufacturer name');
 for(const [f,h] of [['style.css','ae22afcc302123fba024b368a60e63ca2eb05b38590056c7a6210692b7b2b25e'],['models.js','61aeeaa1ceface1d6eac26594e34e791503dec2b3d126e7514f98df20c0546e5'],['content.js','b515149000b53e48a593c74df58a7a34d563b48f6c878c99a73ad615e9cdcf40'],['mcu-timing.js','75b49417d443c63eb78804e2689b29c2b3329fed617896bb89f547c91e431416']])eq(crypto.createHash('sha256').update(read(f)).digest('hex'),h,f+' unchanged');
-ok(read('index.html').includes('engineering-cases.js?v=20261110.1'));ok(read('index.html').includes('app.js?v=20261110.1'));ok(read('index.html').includes('二十六篇来源核验工程案例'));
+ok(read('index.html').includes('engineering-cases.js?v=20261111.1'));ok(read('index.html').includes('app.js?v=20261110.1'));ok(read('index.html').includes('二十七篇来源核验工程案例'));
 console.log(`${checks} original RP2040 fractional-pacing, timing-oracle and preservation assertions passed. No hardware or vendor code executed.`);

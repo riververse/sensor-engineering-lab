@@ -50,11 +50,11 @@ eq(ns(1+8+0+9,40e6),450);eq(ns(3*(1+8+0+9),40e6),1350);eq(1350+50+200,1600);
 const read=f=>fs.readFileSync(__dirname+'/'+f,'utf8'),hash=x=>crypto.createHash('sha256').update(x).digest('hex');
 const src=read('engineering-cases.js'),marker='\n// Original ADCC event-admission case; prior twenty-four cases retained unchanged.\n';
 eq(src.split(marker).length,2);eq(hash(src.split(marker)[0]),'0a91f1f88e6ec301851763b6006f3d000b8fbc9d73942a202da8fc907b502e68','all prior source bytes preserved');
-const ctx={window:{}};vm.runInNewContext(src,ctx);eq(ctx.window.SensorCases.length,26);eq(Object.keys(ctx.window.SensorCaseOverviews).length,26);
+const ctx={window:{}};vm.runInNewContext(src,ctx);eq(ctx.window.SensorCases.length,27);eq(Object.keys(ctx.window.SensorCaseOverviews).length,27);
 const c=ctx.window.SensorCases.find(x=>x.id==='adi-adcc-event-collision');eq(c.status,'待学习');eq(c.reproduction,'未本站实物复现');eq(c.verified,'2026-11-09');eq(c.published,'2013-09');eq(c.blocks.length,7);
 for(const token of ['SYSCLK','ACLK','EMISS','ECOL','DLYCNT','450 ns','1350 ns','1600 ns','4–5','TMR0','8 深','文字差异','未运行','尚未执行'])ok(JSON.stringify(c).includes(token),token);
 for(const s of c.sources){eq(new URL(s.url).hostname,'www.analog.com');eq(new URL(s.url).protocol,'https:');}
 const preserved={"app.js": "98cf80f0fd5bb61c578ba516471dda9ecb69c2b8152b9006e7ce57f895b1f1ed", "style.css": "ae22afcc302123fba024b368a60e63ca2eb05b38590056c7a6210692b7b2b25e", "models.js": "61aeeaa1ceface1d6eac26594e34e791503dec2b3d126e7514f98df20c0546e5", "content.js": "b515149000b53e48a593c74df58a7a34d563b48f6c878c99a73ad615e9cdcf40", "mcu-timing.js": "75b49417d443c63eb78804e2689b29c2b3329fed617896bb89f547c91e431416"};
 for(const [f,h]of Object.entries(preserved))eq(hash(f==='app.js'?read(f).replace('Raspberry Pi、Microchip 的','Raspberry Pi 的'):read(f)),h,f+' unchanged');
-ok(read('index.html').includes('engineering-cases.js?v=20261110.1'));ok(read('index.html').includes('二十六篇'));
+ok(read('index.html').includes('engineering-cases.js?v=20261111.1'));ok(read('index.html').includes('二十七篇'));
 console.log(count+' ADCC admission, clock, validation and exact legacy-preservation checks passed. No silicon, firmware or hardware executed.');

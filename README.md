@@ -241,3 +241,9 @@ Adds a source-checked TIMER/PPI/SAADC/EasyDMA case and original three-channel fr
 - Full app-note PDF reading hit size limits; official online sections and the errata PDF were read. The public repository README/project-directory model mismatch and unverified code license remain disclosed. No vendor code was downloaded or executed; no hardware reproduction or production configuration.
 - All 25 earlier case objects/overviews remain byte-for-byte in the source prefix. Only manufacturer coverage text changes in the renderer; lessons, styles, timing workbench and manual local state remain unchanged. No DESIGN file or generator exists in this repository tree.
 - Run `node flash-sampling.test.cjs` and every existing `*.test.cjs`.
+
+## H503 injected-stop identity case (verified 2026-11-11)
+
+- `#case/st-h503-injected-stop-identity`: ES0561 Rev.6 (2026-04-03), §2.3.4; STM32H503CB/EB/KB/RB revisions A/Z/Y. Distinguishes whole injected sequence completion from individual results and checks channel identity at the stop boundary.
+- Original synthetic event/identity acceptance tests only; no silicon race simulation, vendor code execution or hardware reproduction. All 26 prior cases and designs remain unchanged.
+- Run `node h503-stop.test.cjs` and every existing `*.test.cjs`.

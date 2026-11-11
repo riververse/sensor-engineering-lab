@@ -42,7 +42,7 @@ for(let d=0;d<=100;d++)for(let width=1;width<=50;width++){
 for(const args of [[-1,0],[0,-1],[NaN,0],[0,Infinity],[1.5,0],[0,1e6+1]]){assert.throws(()=>stamp(...args),RangeError);checks++;}
 const ctx={window:{}};vm.runInNewContext(fs.readFileSync(__dirname+'/engineering-cases.js','utf8'),ctx);
 const all=ctx.window.SensorCases,over=ctx.window.SensorCaseOverviews,id='ti-f28004x-ppb-delay',c=all.find(x=>x.id===id),text=JSON.stringify(c);
-eq(all.length,26);eq(c.status,'待学习');eq(c.verified,'2026-11-07');eq(c.blocks.length,7);
+eq(all.length,27);eq(c.status,'待学习');eq(c.verified,'2026-11-07');eq(c.blocks.length,7);
 for(const term of ['12 位','DLYSTAMP','REQSTAMP','FREECOUNT','采样窗开始','不是饱和','0≤d<4096','4096 得到 D=0','软件触发','另一个 SOC','完整性','同一次采样','尚未执行','未下载运行候选项目代码'])ok(text.includes(term),term);
 const hash=x=>crypto.createHash('sha256').update(JSON.stringify(x)).digest('hex');
 eq(hash(all.slice(0,22)),'7fc7a72917f8fa58a59e62df9ad2b4674436213dcac11eb9a79733242ee585cf','22 old case objects unchanged');
