@@ -247,3 +247,7 @@ Adds a source-checked TIMER/PPI/SAADC/EasyDMA case and original three-channel fr
 - `#case/st-h503-injected-stop-identity`: ES0561 Rev.6 (2026-04-03), §2.3.4; STM32H503CB/EB/KB/RB revisions A/Z/Y. Distinguishes whole injected sequence completion from individual results and checks channel identity at the stop boundary.
 - Original synthetic event/identity acceptance tests only; no silicon race simulation, vendor code execution or hardware reproduction. All 26 prior cases and designs remain unchanged.
 - Run `node h503-stop.test.cjs` and every existing `*.test.cjs`.
+
+## AD7606C-18 结果读取期限
+
+新增 `#case/adi-ad7606c-readout-deadline`：区分同时采样与串行搬运，核对前一轮结果、BUSY更新和25 ns保护间隔。无过采样、无附加位完整帧预算为原创教学模型，未本站实物复现。沿用深链、导航、手动进度与减少动态设置。

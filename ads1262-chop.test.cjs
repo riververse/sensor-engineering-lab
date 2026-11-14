@@ -86,7 +86,7 @@ const read=f=>fs.readFileSync(__dirname+'/'+f,'utf8'),source=read('engineering-c
 const marker='\n// Original chop-overlap case; all sixteen prior cases retained unchanged.\n';
 ok(source.includes(marker));eq(crypto.createHash('sha256').update(source.slice(0,source.indexOf(marker))).digest('hex'),'5a2f42e4397ddcb9f1b97fccf0cc84b85d2c5a8b4c5cdff895a8b463f0d2d62c');
 const ctx={window:{}};vm.runInNewContext(source,ctx);const cases=JSON.parse(JSON.stringify(ctx.window.SensorCases));
-eq(cases.length,27);eq(new Set(cases.map(c=>c.id)).size,27);
+eq(cases.length,28);eq(new Set(cases.map(c=>c.id)).size,28);
 const study=cases.find(c=>c.id==='ti-ads1262-chop-overlap');
 eq(cases[16].id,study.id);eq(study.status,'待学习');eq(study.reproduction,'未本站实物复现');eq(study.verified,'2026-10-31');eq(study.published,'2015-02');eq(study.blocks.length,7);eq(study.sources.length,1);
 eq(study.sources[0].url,'https://www.ti.com/lit/ds/symlink/ads1262.pdf');
@@ -95,5 +95,5 @@ const text=JSON.stringify(study);
 for(const token of ['SBAS661C','2021-05','7.3728','IDAC rotation 关闭','不是 ADS1263 的 ADC2','连续转换','7.924','15.848','126.199','18.048','110.816','52 µs','1.75','7σ²/32','σ²/8','极性还原','不是器件漂移规格','不是 TI 报告的器件相关系数','不能由这两个点的中点推算','不能把它们当作 SPI','只运行原创离线模型','未下载、编译、执行或烧录','没有本站或独立第三方实物复现'])ok(text.includes(token),token);
 for(const block of study.blocks)for(const id of block.sourceIds||[])ok(study.sources.some(s=>s.id===id));
 for(const field of ['problem','method','boundary','takeaway'])ok(ctx.window.SensorCaseOverviews[study.id][field].length>=20);
-ok(read('index.html').includes('engineering-cases.js?v=20261111.1'));
+ok(read('index.html').includes('engineering-cases.js?v=20261114.1'));
 console.log(`${count} ADS1262 overlap, covariance, nominal timing and exact legacy-preservation checks passed. Restricted original model only; no vendor code or hardware executed.`);

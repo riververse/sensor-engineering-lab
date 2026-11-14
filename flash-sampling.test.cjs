@@ -63,10 +63,10 @@ const read=f=>fs.readFileSync(__dirname+'/'+f,'utf8'),hash=s=>crypto.createHash(
 const source=read('engineering-cases.js'),marker='\n// Original Q43 flash-write budget case; all twenty-five prior cases retained unchanged.\n';
 eq(source.split(marker).length,2);eq(hash(source.split(marker)[0]),'4639417b6ba09b58e655e0c685c3e657df891489bc0d473634d446ec5b6d3028','all 25 cases and overviews byte-for-byte');
 const ctx={window:{}};vm.runInNewContext(source,ctx);const all=ctx.window.SensorCases,c=all.find(x=>x.id==='microchip-q43-flash-sampling-budget');
-eq(all.length,27);eq(Object.keys(ctx.window.SensorCaseOverviews).length,27);eq(c.id,'microchip-q43-flash-sampling-budget');eq(c.maker,'Microchip');eq(c.verified,'2026-11-10');eq(c.published,'2020-07');eq(c.blocks.length,7);eq(c.status,'待学习');eq(c.reproduction,'未本站实物复现');
+eq(all.length,28);eq(Object.keys(ctx.window.SensorCaseOverviews).length,28);eq(c.id,'microchip-q43-flash-sampling-budget');eq(c.maker,'Microchip');eq(c.verified,'2026-11-10');eq(c.published,'2020-07');eq(c.blocks.length,7);eq(c.status,'待学习');eq(c.reproduction,'未本站实物复现');
 const prose=JSON.stringify(c);for(const term of ['75 μs','50 μs','10 ms','11 ms','25.6 ms','12.8 ms','9.6 ms','0xA512','M=0 μs','M=6 μs','1k','尚未执行','不是实测丢样数量','不以“ADC 全冻结”','不是已核验的厂商源码字节序','预擦除','许可证均未核验','未下载、编译、执行或烧录候选代码'])ok(prose.includes(term),term);
 for(const s of c.sources)ok(['onlinedocs.microchip.com','ww1.microchip.com','github.com'].includes(new URL(s.url).hostname));
 const normalized=read('app.js').replace('Raspberry Pi、Microchip 的','Raspberry Pi 的');eq(hash(normalized),'98cf80f0fd5bb61c578ba516471dda9ecb69c2b8152b9006e7ce57f895b1f1ed','renderer only adds manufacturer text');
 for(const [f,h] of [['style.css','ae22afcc302123fba024b368a60e63ca2eb05b38590056c7a6210692b7b2b25e'],['models.js','61aeeaa1ceface1d6eac26594e34e791503dec2b3d126e7514f98df20c0546e5'],['content.js','b515149000b53e48a593c74df58a7a34d563b48f6c878c99a73ad615e9cdcf40'],['mcu-timing.js','75b49417d443c63eb78804e2689b29c2b3329fed617896bb89f547c91e431416']])eq(hash(read(f)),h,f+' unchanged');
-ok(read('index.html').includes('二十七篇'));ok(read('index.html').includes('engineering-cases.js?v=20261111.1'));ok(read('README.md').includes('#case/'+c.id));
+ok(read('index.html').includes('二十八篇'));ok(read('index.html').includes('engineering-cases.js?v=20261114.1'));ok(read('README.md').includes('#case/'+c.id));
 console.log(checks+' original flash-slot, block, packing, rejection and legacy-preservation checks passed; no firmware or hardware executed.');
