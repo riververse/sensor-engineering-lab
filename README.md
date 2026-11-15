@@ -251,3 +251,11 @@ Adds a source-checked TIMER/PPI/SAADC/EasyDMA case and original three-channel fr
 ## AD7606C-18 结果读取期限
 
 新增 `#case/adi-ad7606c-readout-deadline`：区分同时采样与串行搬运，核对前一轮结果、BUSY更新和25 ns保护间隔。无过采样、无附加位完整帧预算为原创教学模型，未本站实物复现。沿用深链、导航、手动进度与减少动态设置。
+
+## AD7960 MUX quiet-window case (verified 2026-11-15)
+
+- `#case/adi-ad7960-mux-quiet-window`: distinguish a current-conversion forbidden switching interval from next-sample settling.
+- Sources: AD7960 Rev. C (March 2014) and Analog Dialogue 48-07 (July 2014), not a new product release.
+- Original interval exercises use explicit hypothetical jitter and settling budgets, not a device emulator or measured board result. The vendor's every-sixteen-conversions test is not presented as a three-channel-per-cycle demonstration.
+- All previous 28 cases and overviews, runtime, styles, learning state and prior numerical assertions are retained. No build generator exists; data are authored directly in engineering-cases.js.
+- Run all prior suites and `node ad7960-quiet.test.cjs`.

@@ -3395,3 +3395,120 @@ window.SensorCaseOverviews["adi-ad7606c-readout-deadline"] = {
   "boundary": "依据ADI手册与原创期限模型，未做板级实测或给出主机驱动。",
   "takeaway": "采样同步、传输带宽和结果身份，需要分别验收。"
 };
+
+// Original AD7960 quiet-window case; all twenty-eight prior cases retained unchanged.
+window.SensorCases.push({
+  "id": "adi-ad7960-mux-quiet-window",
+  "maker": "ADI",
+  "title": "已经开始转换，为什么换通道仍会弄坏当前结果？",
+  "subtitle": "AD7960 · MUX 切换静区 / 建立时间 / 时序不确定性",
+  "question": "下一通道建立得及，是否就能随时切换？",
+  "summary": "分别检查当前转换的禁切窗口与下一次采样的建立余量。",
+  "published": "2014-07",
+  "revision": "AD7960 Rev. C（2014-03）；Analog Dialogue 48-07（2014-07）",
+  "verified": "2026-11-15",
+  "evidence": "厂商器件手册 + 厂商台架报告 + 本站原创区间模型",
+  "reproduction": "未本站实物复现",
+  "status": "待学习",
+  "lessons": [
+    "adc",
+    "driver",
+    "debug"
+  ],
+  "timingRelated": true,
+  "conditions": "硬件为 AD7960、ADG774 和两路 ADA4899-1；资料版本见上。厂商报告使用 5 MSPS、差分满量程阶跃与 LVDS 主机接口，未给出可锁定的主机固件版本。本文不提供 MCU 接线、ITR/TRGO 映射或可直接烧录配置。",
+  "sources": [
+    {
+      "id": "ds",
+      "label": "AD7960 Rev. C · p.16 静区；p.5 时序；p.2 修订记录",
+      "url": "https://www.analog.com/media/en/technical-documentation/data-sheets/AD7960.pdf",
+      "date": "器件手册首发 2013-08；采用 Rev. C 2014-03；核验 2026-11-15。"
+    },
+    {
+      "id": "bench",
+      "label": "Analog Dialogue 48-07 · 多路采集系统 · pp.2–4",
+      "url": "https://www.analog.com/media/en/analog-dialogue/volume-48/number-3/articles/demystifying-data-acquisition-systems.pdf",
+      "date": "原始文章 2014-07；不是近期新突破；核验 2026-11-15。"
+    }
+  ],
+  "blocks": [
+    {
+      "label": "01 / TWO CONSTRAINTS",
+      "title": "先保护正在转换的值，再准备下一通道",
+      "paragraphs": [
+        "当前通道已被采样保持，只说明采样电容进入了转换阶段。外部切换造成的扰动能否忽略，还要看这颗 ADC 的规定。",
+        "AD7960 手册要求：CNV 上升沿后 90～110 ns 内不要切换复用器输入，否则当前转换可能出现最高 15 LSB 的损坏。这个窗口属于 AD7960，不能推广到所有 SAR ADC。"
+      ],
+      "sourceIds": [
+        "ds"
+      ]
+    },
+    {
+      "label": "02 / VENDOR EVIDENCE",
+      "title": "厂商演示用了明确的切换相位",
+      "paragraphs": [
+        "2014 年厂商台架报告使用 ADG774 和两路 ADA4899-1 驱动 AD7960，在每 16 次转换后切换一次差分满量程输入，切换点约在 CNV 上升沿后 10 ns。",
+        "这证明的是指定信号链的测试。每 16 次切一次，与每次都轮换三通道的压力不同；本站未执行该实验，也未复制其图片或程序。"
+      ],
+      "sourceIds": [
+        "bench"
+      ]
+    },
+    {
+      "label": "03 / INTERVALS",
+      "title": "控制边沿要用一个范围表示",
+      "formula": "假设实际切换时刻范围 = [标称时刻 − 误差上界，标称时刻 + 误差上界]\n避开闭区间 [90, 110] ns：整个范围在 90 ns 之前，或在 110 ns 之后",
+      "paragraphs": [
+        "本站原创模型：将定时器量化、传播延迟变化和测量误差合并为已知上界。这里的切换时刻指 ADC 输入受到换通道影响的时刻，不是软件写寄存器的时间。",
+        "把边界也排除，是教学模型采用的保守判定；真实设计还需额外留裕量，并核查孔径、完整切换瞬态及供电耦合。只知道标称值不够。"
+      ],
+      "sourceIds": [
+        "ds"
+      ]
+    },
+    {
+      "label": "04 / WORKED EXAMPLE",
+      "title": "三个时刻，分别会怎样？",
+      "formula": "教学假设：下一次 CNV 在 200 ns；总建立需求 70 ns；时间误差 ±5 ns\n20 ns → 实际 [15,25]：避开静区，剩余 175 ns，建立余量 105 ns\n100 ns → 实际 [95,105]：落入静区，即使下一次来得及也不接受\n130 ns → 实际 [125,135]：避开静区，但剩余 65 ns，建立余量 −5 ns",
+      "paragraphs": [
+        "70 ns 与 ±5 ns 都是合成参数，不是芯片保证值或本站实测。计算只说明两项检查不能互相替代；第一行通过这两项，也不等于整个电路已经验证。",
+        "不能把运放在某个小阶跃下的建立时间，直接当作全链路、满量程阶跃的保证。实际还包括开关、驱动器、ADC 获取阶段和所需误差容限。"
+      ]
+    },
+    {
+      "label": "05 / CURRENT AND NEXT",
+      "title": "分别观察当前结果与下一结果",
+      "paragraphs": [
+        "待验证思路：固定两路已知低压输入，逐步改变切换相位。分别记录切换所在转换的结果、下一转换的结果和通道标识，而不把两者混进一个平均值。",
+        "若当前结果随切换相位异常，优先核查扰动窗口；若下一结果随等待时间改善，建立不足是候选原因。两种现象可以同时出现，单次对照不能证明根因。"
+      ]
+    },
+    {
+      "label": "06 / BENCH ACCEPTANCE",
+      "title": "待执行的台架验收清单",
+      "paragraphs": [
+        "以下清单尚未执行。仅用于已确认安全隔离、幅值及接口均符合额定条件的低压台架。"
+      ],
+      "bullets": [
+        "先核查实际器件、参考电压、差分共模范围与 LVDS 主机能力；不将高速差分口直接套用普通 MCU SPI。",
+        "同时观察 CNV、MUX 控制和实际模拟输入瞬态；分别测量固定延迟、抖动与测量不确定性。",
+        "测试静区前后、满量程正反跳变、每次换通道和原文每 16 次换通道；保留当前与下一结果的独立标签。",
+        "核对最坏建立余量与误差上界；不以曲线平滑、平均值正常或一次成功代替全条件验收。"
+      ]
+    },
+    {
+      "label": "07 / TRANSFER",
+      "title": "迁移时，重画两条边界",
+      "paragraphs": [
+        "练习：把第三个例子的标称切换时刻改成 120 ns。实际范围为 [115,125] ns，距离下一次采样至少 75 ns，减去假设的 70 ns 建立需求还余 5 ns。这只是模型判定通过，5 ns 是否足够要靠真实误差预算回答。",
+        "资料版权归 ADI，公开手册不授予图文或代码的开源许可。本站只给原创解释、计算与原文链接。换 ADC 后应重新核查静区、孔径和获取过程；本例没有实现或验证任何 MCU 触发连线。"
+      ]
+    }
+  ]
+});
+window.SensorCaseOverviews["adi-ad7960-mux-quiet-window"] = {
+  "problem": "下一通道能及时建立，仍可能因切换落入禁区而破坏当前转换。",
+  "method": "分别检查实际切换时间范围、当前禁切窗口与下一采样的建立余量。",
+  "boundary": "依据厂商资料与原创区间计算，尚未实物复现，不提供可部署的 MCU 配置。",
+  "takeaway": "当前结果不被扰动与下一结果充分建立，需要各自独立的验收证据。"
+};
