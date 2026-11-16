@@ -259,3 +259,10 @@ Adds a source-checked TIMER/PPI/SAADC/EasyDMA case and original three-channel fr
 - Original interval exercises use explicit hypothetical jitter and settling budgets, not a device emulator or measured board result. The vendor's every-sixteen-conversions test is not presented as a three-channel-per-cycle demonstration.
 - All previous 28 cases and overviews, runtime, styles, learning state and prior numerical assertions are retained. No build generator exists; data are authored directly in engineering-cases.js.
 - Run all prior suites and `node ad7960-quiet.test.cjs`.
+
+## AD4696 mixed OSR sequence budget (verified 2026-11-16)
+
+- `#case/adi-ad4696-osr-sequence-budget`: distinguish CNV opportunities, per-channel output rate, averaging-time identity and worst update gap.
+- AD4695/AD4696 Rev. B (April 2023) is a mature manual source, not a new product announcement. Original 2 μs / 1-4-16 examples are schedule arithmetic, not hardware simulation or board measurements.
+- All 29 prior cases and overviews retained byte-for-byte; renderer, styling, lessons and manual state unchanged. No generator exists.
+- Run every `*.test.cjs`, including `ad4696-sequence.test.cjs`.
