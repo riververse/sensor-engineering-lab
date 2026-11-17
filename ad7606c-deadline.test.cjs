@@ -20,9 +20,9 @@ const read=f=>fs.readFileSync(__dirname+'/'+f,'utf8');const src=read('engineerin
 const marker='\n// Original AD7606C readout-deadline case; all twenty-seven prior cases retained unchanged.\n';
 eq(src.split(marker).length,2);eq(crypto.createHash('sha256').update(src.split(marker)[0]).digest('hex'),'1e81a7858dd6db146ee59869b59f35f82387c2073076bf559a554a21dfb17588','27 original cases byte-exact');
 const ctx={window:{}};vm.runInNewContext(src,ctx);const all=ctx.window.SensorCases,c=all.find(x=>x.id==='adi-ad7606c-readout-deadline');
-eq(all.length,30);eq(new Set(all.map(x=>x.id)).size,30);eq(Object.keys(ctx.window.SensorCaseOverviews).length,30);
+eq(all.length,31);eq(new Set(all.map(x=>x.id)).size,31);eq(Object.keys(ctx.window.SensorCaseOverviews).length,31);
 eq(c.id,'adi-ad7606c-readout-deadline');eq(c.verified,'2026-11-14');eq(c.status,'待学习');eq(c.reproduction,'未本站实物复现');eq(c.blocks.length,7);
 for(const term of ['25 ns','0.5～0.65','144','36','7.2','19.975','0.775','第 n−1','部分读取','未运行候选工程'])ok(JSON.stringify(c).includes(term),term);
 eq(c.sources.length,2);ok(c.sources.every(x=>new URL(x.url).hostname==='www.analog.com'));
-ok(read('index.html').includes('engineering-cases.js?v=20261116.1'));ok(read('README.md').includes('#case/'+c.id));
+ok(read('index.html').includes('engineering-cases.js?v=20261117.1'));ok(read('README.md').includes('#case/'+c.id));
 console.log(checks+' AD7606C deadline, identity, boundary and preservation assertions passed; no hardware emulation.');

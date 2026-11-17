@@ -23,8 +23,8 @@ assert.throws(()=>budget(2,5,70,200),RangeError);n++;assert.throws(()=>budget(19
 const read=f=>fs.readFileSync(__dirname+'/'+f,'utf8'),s=read('engineering-cases.js');
 const marker='\n// Original AD7960 quiet-window case; all twenty-eight prior cases retained unchanged.\n';
 eq(s.split(marker).length,2);eq(crypto.createHash('sha256').update(s.split(marker)[0]).digest('hex'),'9f08d241205f388146b6e92d0235f862cf0deb40c87597e111846eb08bfaf38d','all previous source bytes exact');
-const ctx={window:{}};vm.runInNewContext(s,ctx);const cs=ctx.window.SensorCases,c=cs.find(x=>x.id==='adi-ad7960-mux-quiet-window');eq(cs.length,30);eq(c.id,'adi-ad7960-mux-quiet-window');eq(c.status,'待学习');eq(c.reproduction,'未本站实物复现');eq(c.published,'2014-07');eq(c.verified,'2026-11-15');eq(c.blocks.length,7);eq(c.sources.length,2);
+const ctx={window:{}};vm.runInNewContext(s,ctx);const cs=ctx.window.SensorCases,c=cs.find(x=>x.id==='adi-ad7960-mux-quiet-window');eq(cs.length,31);eq(c.id,'adi-ad7960-mux-quiet-window');eq(c.status,'待学习');eq(c.reproduction,'未本站实物复现');eq(c.published,'2014-07');eq(c.verified,'2026-11-15');eq(c.blocks.length,7);eq(c.sources.length,2);
 for(const x of ['90～110 ns','每 16 次','70 ns','±5 ns','−5 ns','不是芯片保证值','尚未执行','版权归 ADI'])ok(JSON.stringify(c).includes(x),x);
 for(const source of c.sources)eq(new URL(source.url).hostname,'www.analog.com');
-ok(read('index.html').includes('engineering-cases.js?v=20261116.1'));ok(read('README.md').includes('#case/'+c.id));
+ok(read('index.html').includes('engineering-cases.js?v=20261117.1'));ok(read('README.md').includes('#case/'+c.id));
 console.log(n+' AD7960 interval, deadline, boundary and exact-preservation checks passed.');

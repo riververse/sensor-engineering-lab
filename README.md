@@ -266,3 +266,8 @@ Adds a source-checked TIMER/PPI/SAADC/EasyDMA case and original three-channel fr
 - AD4695/AD4696 Rev. B (April 2023) is a mature manual source, not a new product announcement. Original 2 μs / 1-4-16 examples are schedule arithmetic, not hardware simulation or board measurements.
 - All 29 prior cases and overviews retained byte-for-byte; renderer, styling, lessons and manual state unchanged. No generator exists.
 - Run every `*.test.cjs`, including `ad4696-sequence.test.cjs`.
+
+## ADXL355 FIFO observation case (verified 2026-11-17)
+- Route: `#case/adi-adxl355-fifo-read-clear-evidence`. Rev. D (2025-06), pp.29,31–32,37.
+- Distinguishes axis entries, XYZ groups, read-to-clear evidence, and mixed-generation direct reads. The 32 ms arithmetic is data capacity, never a guaranteed service deadline.
+- Run `node adxl355-fifo-evidence.test.cjs` and every existing `*.test.cjs`. Only original synthetic event models and site checks; no candidate code or hardware execution.
